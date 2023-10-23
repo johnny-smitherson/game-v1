@@ -8,15 +8,15 @@ use bevy::prelude::*;
 #[derive(Bundle, Default)]
 pub struct PlayerBundle {
     pub spatial: SpatialBundle,
-    pub player_comp: PlayerComp,
+    pub player_comp: PlayerComponent,
 }
 
 #[derive(Component)]
-pub struct PlayerComp {
+pub struct PlayerComponent {
     pub camera_height: f32,
 }
 
-impl Default for PlayerComp {
+impl Default for PlayerComponent {
     fn default() -> Self {
         Self {
             camera_height: 10.0,
@@ -27,6 +27,9 @@ impl Default for PlayerComp {
 use bevy::core_pipeline::bloom::BloomSettings;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
+
+
+
 // use bevy_atmosphere::prelude::AtmosphereCamera;
 /// Spawns the `Camera3dBundle` to be controlled
 fn setup_player(mut commands: Commands) {
@@ -70,15 +73,6 @@ fn setup_player(mut commands: Commands) {
     info!("camera: {:?} player: {:?}", camera, player);
 }
 
-pub struct PlayerPlugin;
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_player)
-            .init_resource::<InputState>()
-            .init_resource::<MovementSettings>()
-            .add_systems(Update, cursor_grab);
-    }
-}
 
 fn cursor_grab(
     keys: Res<Input<KeyCode>>,
@@ -135,3 +129,16 @@ impl Default for MovementSettings {
 /// A marker component used in queries when you want flycams and not other cameras
 #[derive(Component)]
 pub struct FlyCam;
+
+
+
+
+pub struct PlayerPlugin;
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(PreStartup, setup_player)
+            .init_resource::<InputState>()
+            .init_resource::<MovementSettings>()
+            .add_systems(Update, cursor_grab);
+    }
+}

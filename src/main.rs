@@ -1,12 +1,14 @@
 mod height;
 mod triangle;
-use triangle::PiramidePlugin;
-
+mod piramida;
+mod planet;
 mod player;
-use player::PlayerPlugin;
-
 mod menu;
+
+use planet::PlanetPlugin;
+use player::PlayerPlugin;
 use menu::MenuPlugin;
+
 
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
@@ -14,6 +16,8 @@ use bevy::{
     window::{PresentMode, WindowResolution},
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_rapier3d::prelude::*;
+
 
 fn main() {
     App::new()
@@ -39,14 +43,22 @@ fn main() {
             color: Color::WHITE,
             brightness: 0.05,
         })
+
         // ==============
-        // OWN PLUGINS
+        // PHYSICS AND SHIT
+        // ==============
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
+        .add_plugins(RapierDebugRenderPlugin::default())
+
+        // ==============
+        // GAME PLUGINS
         // ==============
         .add_plugins(MenuPlugin)
         .add_plugins(PlayerPlugin)
-        .add_plugins(PiramidePlugin)
+        .add_plugins(PlanetPlugin)
+
         // ============
-        // OTHER PLUGINS
+        // DIAGNOSTIC DEBUG LOGGING
         // =============
         .add_plugins(LogDiagnosticsPlugin::default())
         .add_plugins(FrameTimeDiagnosticsPlugin::default())
@@ -61,24 +73,8 @@ fn main() {
 
 fn setup_world_scene(
     mut commands: Commands,
-    // mut meshes: ResMut<Assets<Mesh>>,
-    // mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // commands.spawn(PointLightBundle {
-    //     point_light: PointLight {
-    //         intensity: 9000.0 * PLANET_RADIUS,
-    //         range: 10. * PLANET_RADIUS,
-    //         shadows_enabled: true,
-    //         ..default()
-    //     },
-    //     transform: Transform::from_xyz(
-    //         8.0,
-    //         2.0 * PLANET_RADIUS,
-    //         3.0 * PLANET_RADIUS,
-    //     ),
-    //     ..default()
-    // });
-
+    // 3 suns because night sucks
     commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             color: Color::rgb(0.99, 0.9, 0.9),
