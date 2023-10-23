@@ -8,6 +8,7 @@ use bevy::render::mesh::{Indices, PrimitiveTopology};
 
 use super::height::apply_height;
 use crate::height::TerrainSettings;
+use bevy_rapier3d::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
 pub struct TriangleData {
@@ -132,26 +133,32 @@ impl Triangle {
         )
     }
 
-    pub fn generate_mesh(&self, _settings: &TerrainSettings) -> Mesh {
+    pub fn generate_mesh(&self, _settings: &TerrainSettings) -> (Mesh, Collider) {
         let mut all_verts = Vec::<Vec3>::new();
         let mut all_norms = Vec::<Vec3>::new();
         let mut all_uvs = Vec::<Vec2>::new();
         let mut all_indices = Vec::<u32>::new();
+        let mut all_indices_grp = Vec::<[u32; 3]>::new();
+
         let mut idx: u32 = 0;
         for data in self.all_data.iter() {
             all_verts.extend_from_slice(&data.verts);
             all_norms.extend_from_slice(&data.norm);
             all_uvs.extend_from_slice(&data.uvs);
             all_indices.extend_from_slice(&[idx, idx + 1, idx + 2]);
+            all_indices_grp.push([idx, idx + 1, idx + 2]);
             idx += 3;
         }
+        let collider = Collider::trimesh(all_verts.clone(), all_indices_grp);
 
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
         mesh.set_indices(Some(Indices::U32(all_indices)));
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, all_verts);
         mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, all_norms);
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, all_uvs);
-        mesh
+
+        // let collider =  Collider::from_bevy_mesh(&mesh, &ComputedColliderShape::TriMesh).expect("mesh incompatible with physics lib");
+        (mesh, collider)
     }
 
     pub fn is_split(&self) -> bool {

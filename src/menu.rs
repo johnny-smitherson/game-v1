@@ -5,16 +5,17 @@ use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use super::height::TerrainSettings;
 
 #[derive(Resource, Default)]
-pub struct UiState {
+pub struct UiMenuState {
     pub settings: TerrainSettings,
     pub enable_animation: bool,
     pub triangle_count: f32,
     pub mesh_count: f32,
     pub tri_compute_ms: f32,
     pub ui_prevent_input: bool,
+    pub is_mouse_captured: bool,
 }
 
-pub fn egui_ui_system(mut egui_context: EguiContexts, mut ui_state: ResMut<UiState>) {
+pub fn egui_ui_system(mut egui_context: EguiContexts, mut ui_state: ResMut<UiMenuState>) {
     egui::Window::new("Piramidă").show(egui_context.ctx_mut(), |ui| {
         ui.label(
             "  Triangles: ".to_string()
@@ -63,7 +64,7 @@ pub fn egui_ui_system(mut egui_context: EguiContexts, mut ui_state: ResMut<UiSta
     ui_state.ui_prevent_input = egui_context.ctx_mut().is_pointer_over_area();
 }
 
-pub fn allow_player_input(ui_state: Res<UiState>) -> bool {
+pub fn allow_player_input(ui_state: Res<UiMenuState>) -> bool {
     !ui_state.ui_prevent_input
 }
 
@@ -71,7 +72,7 @@ pub struct MenuPlugin;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin)
-            .init_resource::<UiState>()
+            .init_resource::<UiMenuState>()
             .add_systems(
                 Update,
                 (egui_ui_system, cursor_grab_click.run_if(allow_player_input)).chain(),

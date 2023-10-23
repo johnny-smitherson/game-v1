@@ -1,33 +1,98 @@
 // use std::collections::{vec_deque, VecDeque};
 use super::height::{height, PLANET_RADIUS};
-use super::menu::UiState;
+use super::menu::UiMenuState;
 use crate::piramida::Piramidesc;
 use crate::piramida::Piramidă;
 use crate::triangle::Triangle;
+use bevy::prelude::shape::Cube;
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 use rayon::prelude::IntoParallelRefMutIterator;
 
 pub struct PlanetPlugin;
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_planet)
-            .add_systems(PostStartup, setup_player_with_planet)
-            .add_systems(
-                Update,
-                (rotate_planet, rotate_player, update_triangle_split).chain(),
-            );
+        app.add_systems(Startup, setup_planet).add_systems(
+            Update,
+            (rotate_player, update_triangle_split, shoot_cube).chain(),
+        );
     }
+}
+
+#[derive(Component)]
+pub struct Bullet;
+
+fn shoot_cube(
+    mut commands: Commands,
+    ui_state: Res<UiMenuState>,
+    mouse_button: Res<Input<MouseButton>>,
+    player_query: Query<&mut Transform, With<PlayerComponent>>,
+    camera_query: Query<&mut GlobalTransform, (With<FlyCam>, Without<PlayerComponent>)>,
+
+    // TODO: DELETE THESE SAVE IN BULLET BUNDLE
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    if !ui_state.is_mouse_captured {
+        return;
+    }
+    if !mouse_button.just_pressed(MouseButton::Left) {
+        return;
+    }
+    let camera_tr = camera_query.get_single().expect("no camera wtf.");
+    let player_tr = player_query.get_single().expect("no player wtf.");
+
+    const SHOOT_IMPULSE: f32 = 1000.0;
+    const SHOOT_ROTATION: f32 = 100.0;
+    const SHOOT_EXTRA_FORWARD: f32 = 1.5;
+    const SHOOT_CUBE_SIZE: f32 = 1.0;
+
+    let fwd = camera_tr.forward();
+    let spawn_pos = player_tr.translation + fwd * SHOOT_EXTRA_FORWARD;
+
+    commands
+        .spawn((
+            Bullet,
+            PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube {
+                    size: SHOOT_CUBE_SIZE,
+                })),
+                material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+                transform: Transform::from_translation(spawn_pos),
+                ..default()
+            },
+        ))
+        .insert(RigidBody::Dynamic)
+        .insert(Collider::cuboid(
+            SHOOT_CUBE_SIZE / 2.0_f32,
+            SHOOT_CUBE_SIZE / 2.0_f32,
+            SHOOT_CUBE_SIZE / 2.0_f32,
+        ))
+        .insert(Ccd::enabled())
+        .insert(Damping {
+            linear_damping: 0.05,
+            angular_damping: 0.05,
+        })
+        .insert(ExternalImpulse {
+            impulse: fwd * SHOOT_IMPULSE,
+            torque_impulse: Vec3::new(0.0, 0.0, SHOOT_ROTATION),
+        })
+        .insert(Name::new("BULLET"));
 }
 
 #[allow(clippy::type_complexity)]
 fn update_triangle_split(
     player_query: Query<&Transform, With<PlayerComponent>>,
     mut tri_query: Query<
-        (&mut Triangle, &mut Handle<Mesh>),
-        (With<Triangle>, With<Handle<Mesh>>, Without<PlayerComponent>),
+        (&mut Triangle, &mut Handle<Mesh>, &mut Collider),
+        (
+            With<Triangle>,
+            With<Handle<Mesh>>,
+            With<Collider>,
+            Without<PlayerComponent>,
+        ),
     >,
-    mut ui_state: ResMut<UiState>,
-
+    mut ui_state: ResMut<UiMenuState>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let player_pos = player_query.single().translation;
@@ -52,10 +117,12 @@ fn update_triangle_split(
     use rayon::iter::ParallelIterator;
     let query_results: Vec<Option<_>> = query_args
         .par_iter_mut()
-        .map(|(tri, mesh_handle)| {
+        .map(|(tri, mesh_handle, collider)| {
             let changed = tri.update_split(&player_pos, &ui_state.settings);
             if changed {
-                Some((mesh_handle, (tri.generate_mesh(&ui_state.settings))))
+                let (mesh, new_collider) = tri.generate_mesh(&ui_state.settings);
+                *collider.as_mut() = new_collider;
+                Some((mesh_handle, mesh))
             } else {
                 None
             }
@@ -72,7 +139,7 @@ fn update_triangle_split(
 
     let mut triangle_count = 0;
     let mut mesh_count = 0;
-    for (triangle, _) in query_args {
+    for (triangle, _, _) in query_args {
         triangle_count += triangle.tri_count();
         mesh_count += 1;
     }
@@ -87,24 +154,12 @@ pub struct PlanetComponent;
 
 use super::player::PlayerComponent;
 
-#[derive(Component)]
-pub struct CrosshairCubeX;
-
-#[derive(Component)]
-pub struct CrosshairCubeY;
-
-#[derive(Component)]
-pub struct CrosshairCubeZ;
-
-#[derive(Component)]
-pub struct Crosshair<const N: usize>;
-
 fn setup_planet(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    ui_state: ResMut<UiState>,
+    ui_state: ResMut<UiMenuState>,
 ) {
     warn!("TRIANGLE/PYRAMID SETUP SYSTEM...");
 
@@ -123,86 +178,29 @@ fn setup_planet(
                 transform: Transform::from_xyz(0., 0.0, 0.0), // .with_rotation(Quat::from_rotation_x(-PI / 4.)),
                 ..default()
             },
+            Name::new("THE PLANET"),
         ))
         .id();
 
     for (_tri_idx, tri) in tris.into_iter().enumerate() {
+        let (mesh, collider) = tri.generate_mesh(&ui_state.settings);
+        let mesh_asset = meshes.add(mesh);
+
         let tri_ent = commands
             .spawn((
                 PbrBundle {
-                    mesh: meshes.add(tri.generate_mesh(&ui_state.settings)),
+                    mesh: mesh_asset,
                     material: debug_material.clone(),
                     ..default()
                 },
                 tri,
+                collider,
+                Ccd::enabled(),
                 // PickableBundle::default(),
+                Name::new("some base planet triangle"),
             ))
             .id();
         commands.entity(tri_ent).set_parent(planet_ent);
-    }
-}
-
-fn setup_player_with_planet(
-    mut commands: Commands,
-    mut player_query: Query<Entity, With<PlayerComponent>>,
-    mut flycam_state: ResMut<InputState>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut query_planet: Query<Entity, With<PlanetComponent>>,
-) {
-    warn!("PLAYER CROSSHAIR SETUP SYSTEM...");
-    flycam_state.as_mut().pitch = 0.;
-    let crosshairs_id_x = commands
-        .spawn((
-            PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::rgb(0.9, 0.1, 0.1).into()),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0)
-                    .with_scale(Vec3::new(0.03, 0.03, 0.03)),
-                ..default()
-            },
-            CrosshairCubeX,
-        ))
-        .id();
-    let crosshairs_id_y = commands
-        .spawn((
-            PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::rgb(0.1, 0.9, 0.1).into()),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0)
-                    .with_scale(Vec3::new(0.03, 0.03, 0.03)),
-                ..default()
-            },
-            CrosshairCubeY,
-        ))
-        .id();
-    let crosshairs_id_z = commands
-        .spawn((
-            PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::rgb(0.1, 0.1, 0.9).into()),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0)
-                    .with_scale(Vec3::new(0.03, 0.03, 0.03)),
-                ..default()
-            },
-            CrosshairCubeZ,
-        ))
-        .id();
-
-    let player = player_query.get_single_mut().expect("player not found!!");
-    let planet_ent = query_planet.get_single_mut().expect("planet not found!!");
-    commands.entity(player).set_parent(planet_ent);
-    commands.entity(crosshairs_id_x).set_parent(planet_ent);
-    commands.entity(crosshairs_id_y).set_parent(planet_ent);
-    commands.entity(crosshairs_id_z).set_parent(planet_ent);
-}
-
-fn rotate_planet(
-    mut query_piramidă: Query<&mut Transform, With<PlanetComponent>>,
-    time: Res<Time>,
-) {
-    for mut transform in &mut query_piramidă {
-        transform.rotate_x(time.delta_seconds() / 2.);
     }
 }
 
@@ -218,54 +216,25 @@ fn rotate_player(
     mut query_player: Query<(&mut Transform, &mut PlayerComponent), With<PlayerComponent>>,
     mut query_camera: Query<&mut Transform, (With<FlyCam>, Without<PlayerComponent>)>,
 
-    mut query_crosshair_x: Query<
-        (&mut Transform, Entity),
-        (
-            With<CrosshairCubeX>,
-            Without<FlyCam>,
-            Without<PlayerComponent>,
-        ),
-    >,
-
-    mut query_crosshair_y: Query<
-        &mut Transform,
-        (
-            With<CrosshairCubeY>,
-            Without<CrosshairCubeX>,
-            Without<FlyCam>,
-            Without<PlayerComponent>,
-        ),
-    >,
-
-    mut query_crosshair_z: Query<
-        &mut Transform,
-        (
-            With<CrosshairCubeZ>,
-            Without<CrosshairCubeX>,
-            Without<CrosshairCubeY>,
-            Without<FlyCam>,
-            Without<PlayerComponent>,
-        ),
-    >,
     time: Res<Time>,
-    mut flycam_state: ResMut<InputState>,
+    mut mouse_input_state: ResMut<InputState>,
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
     mouse_motion_events: Res<Events<MouseMotion>>,
     mut scroll_evr: EventReader<MouseWheel>,
     keys: Res<Input<KeyCode>>,
     settings: Res<MovementSettings>,
-    ui_state: Res<UiState>,
+    mut ui_state: ResMut<UiMenuState>,
 ) {
     // mouse movements
-    let delta_state = flycam_state.as_mut();
+    let delta_state = mouse_input_state.as_mut();
     let mut mouse_delta_pitch = delta_state.pitch;
     let mut mouse_delta_yaw = 0.0;
 
     let window = primary_window.get_single_mut().expect("no window wtf");
-    let is_mouse_grabbed = window.cursor.grab_mode != CursorGrabMode::None;
+    ui_state.is_mouse_captured = window.cursor.grab_mode != CursorGrabMode::None;
     // capture mouse motion events
     for ev in delta_state.reader_motion.iter(&mouse_motion_events) {
-        if is_mouse_grabbed {
+        if ui_state.is_mouse_captured {
             // Using smallest of height or width ensures equal vertical and horizontal sensitivity
             let window_scale = window.height().min(window.width());
             mouse_delta_pitch -= (settings.sensitivity * ev.delta.y * window_scale).to_radians();
@@ -278,16 +247,6 @@ fn rotate_player(
     let (mut player_tr, mut player_comp) = query_player.get_single_mut().expect("no player");
     let mut camera_tr = query_camera.get_single_mut().expect("no camera");
 
-    let (mut crosshair_x, _entity) = query_crosshair_x
-        .get_single_mut()
-        .expect("no crosshair cube");
-    let mut crosshair_y = query_crosshair_y
-        .get_single_mut()
-        .expect("no crosshair cube");
-    let mut crosshair_z = query_crosshair_z
-        .get_single_mut()
-        .expect("no crosshair cube");
-
     // capture movement events: wasd/scroll wheel
     {
         let mut velocity = Vec3::ZERO;
@@ -296,7 +255,7 @@ fn rotate_player(
         let _forward = _up.cross(_right).normalize();
 
         for key in keys.get_pressed() {
-            if is_mouse_grabbed {
+            if ui_state.is_mouse_captured {
                 match key {
                     KeyCode::W => velocity += _forward,
                     KeyCode::S => velocity -= _forward,
@@ -309,7 +268,7 @@ fn rotate_player(
             }
         }
 
-        if !is_mouse_grabbed && ui_state.enable_animation {
+        if !ui_state.is_mouse_captured && ui_state.enable_animation {
             // println!("{}", time.elapsed_seconds());
             velocity += _forward * 1.0; //(time.elapsed_seconds() / 3.0 + 1.0).sin();
             velocity += _right * (time.elapsed_seconds() / 4.0 + 2.0).cos();
@@ -369,10 +328,6 @@ fn rotate_player(
     }
     let _target = player_tr.translation + _forward;
     player_tr.look_at(_target, _up);
-
-    crosshair_z.translation = player_tr.translation + _forward;
-    crosshair_y.translation = player_tr.translation + _up;
-    crosshair_x.translation = player_tr.translation + _right;
 }
 
 // Creates a colorful test pattern

@@ -1,6 +1,7 @@
 use bevy::ecs::event::ManualEventReader;
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::*;
 // use bevy_flycam::FlyCam;
 // use bevy_flycam::NoGrabNoPlayerPlugin;
 
@@ -40,8 +41,7 @@ fn setup_player(mut commands: Commands) {
                     hdr: true,
                     ..default()
                 },
-                transform: Transform::from_xyz(0., 0., 0.)
-                    .looking_at(Vec3::new(0., 0., -1.), Vec3::Y),
+
                 tonemapping: Tonemapping::BlenderFilmic,
                 ..Default::default()
             },
@@ -54,18 +54,12 @@ fn setup_player(mut commands: Commands) {
                             // threshold: 0.7,
             },
             // PickingCameraBundle::default();
+            Name::new("THE CAMERA"),
         ))
         .id();
 
     let player = commands
-        .spawn(PlayerBundle {
-            spatial: SpatialBundle {
-                transform: Transform::from_xyz(0., 0., 0.)
-                    .looking_at(Vec3::new(0., 0., -1.), Vec3::Y),
-                ..default()
-            },
-            ..default()
-        })
+        .spawn((PlayerBundle { ..default() }, Name::new("THE PLAYER")))
         .id();
     commands.entity(camera).set_parent(player);
     info!("camera: {:?} player: {:?}", camera, player);

@@ -67,43 +67,46 @@ fn main() {
 }
 
 fn setup_world_scene(mut commands: Commands) {
-    // 3 suns because night sucks
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            color: Color::rgb(0.99, 0.9, 0.9),
-            illuminance: 6789.0,
-            shadows_enabled: true,
-            ..Default::default()
-        },
-        transform: Transform::from_rotation(
-            Quat::from_rotation_x(1.) * Quat::from_rotation_y(0.) * Quat::from_rotation_z(1.),
-        ),
-        ..default()
-    });
+    // // 3 suns because night sucks
+    // commands.spawn(DirectionalLightBundle {
+    //     directional_light: DirectionalLight {
+    //         color: Color::rgb(0.99, 0.9, 0.9),
+    //         illuminance: 6789.0,
+    //         shadows_enabled: true,
+    //         ..Default::default()
+    //     },
+    //     transform: Transform::from_rotation(
+    //         Quat::from_rotation_x(1.) * Quat::from_rotation_y(0.) * Quat::from_rotation_z(1.),
+    //     ),
+    //     ..default()
+    // });
 
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            color: Color::rgb(0.9, 0.99, 0.9),
-            illuminance: 7890.0,
-            shadows_enabled: true,
-            ..Default::default()
-        },
-        transform: Transform::from_rotation(
-            Quat::from_rotation_x(-1.) * Quat::from_rotation_y(1.) * Quat::from_rotation_z(-1.),
-        ),
-        ..default()
-    });
+    // commands.spawn(DirectionalLightBundle {
+    //     directional_light: DirectionalLight {
+    //         color: Color::rgb(0.9, 0.99, 0.9),
+    //         illuminance: 7890.0,
+    //         shadows_enabled: true,
+    //         ..Default::default()
+    //     },
+    //     transform: Transform::from_rotation(
+    //         Quat::from_rotation_x(-1.) * Quat::from_rotation_y(1.) * Quat::from_rotation_z(-1.),
+    //     ),
+    //     ..default()
+    // });
 
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            color: Color::rgb(0.9, 0.9, 0.99),
-            illuminance: 8906.0,
-            shadows_enabled: true,
-            ..Default::default()
+    commands.spawn((
+        DirectionalLightBundle {
+            directional_light: DirectionalLight {
+                color: Color::rgb(0.95, 0.9, 0.99),
+                illuminance: 8906.0,
+                shadows_enabled: true,
+                ..Default::default()
+            },
+            transform: Transform::from_rotation(
+                Quat::from_rotation_x(1.) * Quat::from_rotation_y(3.) * Quat::from_rotation_z(0.5),
+            ),
+            ..default()
         },
-        transform: Transform::from_rotation(
-            Quat::from_rotation_x(3.) * Quat::from_rotation_y(-1.) * Quat::from_rotation_z(0.),
-        ),
-        ..default()
-    });
+        Name::new("THE SUN"),
+    ));
 }

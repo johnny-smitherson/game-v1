@@ -1,9 +1,11 @@
 use bevy::prelude::Vec3;
 use noise::{Billow, NoiseFn, Perlin};
 
-pub const MOUNTAIN_HEIGHT: f32 = 500.0;
-pub const PLANET_RADIUS: f32 = 10000.0;
-pub const NOISE_SEED: f32 = 100.0;
+pub const NOISE_SEED: f32 = 0.0;
+pub const MOUNTAIN_HEIGHT: f32 = 1000.0;
+pub const PLANET_RADIUS: f32 = 100000.0;
+
+pub const NOISE_BASE_FREQ: f32 = 10000.0;
 
 #[allow(non_snake_case)]
 #[derive(Debug, Copy, Clone)]
@@ -37,23 +39,23 @@ pub fn height(_pos: &Vec3) -> f32 {
     let noise2 = Billow::<Perlin>::new(1);
     let noise3 = Billow::<Perlin>::new(3);
     let noise4 = Billow::<Perlin>::new(2);
-    let ref_pos = Vec3::new(_pos.x, NOISE_SEED, _pos.z) / PLANET_RADIUS;
+    let ref_pos = Vec3::new(_pos.x, NOISE_SEED, _pos.z) / NOISE_BASE_FREQ;
     let ret_val = (noise1.get([
         (ref_pos.x / 1.0) as f64,
         (ref_pos.y / 1.0) as f64,
         (ref_pos.z / 1.0) as f64,
     ]) + noise2.get([
-        (ref_pos.x / 2.0) as f64,
-        (ref_pos.y / 2.0) as f64,
-        (ref_pos.z / 2.0) as f64,
+        (ref_pos.x / 3.0) as f64,
+        (ref_pos.y / 3.0) as f64,
+        (ref_pos.z / 3.0) as f64,
     ]) + noise3.get([
-        (ref_pos.x / 4.0) as f64,
-        (ref_pos.y / 4.0) as f64,
-        (ref_pos.z / 4.0) as f64,
+        (ref_pos.x / 9.0) as f64,
+        (ref_pos.y / 9.0) as f64,
+        (ref_pos.z / 9.0) as f64,
     ]) + noise4.get([
-        (ref_pos.x / 8.0) as f64,
-        (ref_pos.y / 8.0) as f64,
-        (ref_pos.z / 8.0) as f64,
+        (ref_pos.x / 27.0) as f64,
+        (ref_pos.y / 27.0) as f64,
+        (ref_pos.z / 27.0) as f64,
     ])) / 4.0;
     let ret_val = ret_val as f32;
 
