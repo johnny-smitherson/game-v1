@@ -58,7 +58,6 @@ pub fn height(_pos: &Vec3) -> f32 {
     let ret_val = ret_val as f32;
 
     MOUNTAIN_HEIGHT * ret_val
-    
 }
 
 pub fn apply_height(pos: &Vec3) -> Vec3 {

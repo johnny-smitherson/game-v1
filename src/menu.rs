@@ -72,7 +72,10 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin)
             .init_resource::<UiState>()
-            .add_systems(Update, (egui_ui_system, cursor_grab_click.run_if(allow_player_input)).chain());
+            .add_systems(
+                Update,
+                (egui_ui_system, cursor_grab_click.run_if(allow_player_input)).chain(),
+            );
     }
 }
 

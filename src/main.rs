@@ -1,14 +1,13 @@
 mod height;
-mod triangle;
+mod menu;
 mod piramida;
 mod planet;
 mod player;
-mod menu;
+mod triangle;
 
+use menu::MenuPlugin;
 use planet::PlanetPlugin;
 use player::PlayerPlugin;
-use menu::MenuPlugin;
-
 
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
@@ -17,7 +16,6 @@ use bevy::{
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
-
 
 fn main() {
     App::new()
@@ -43,20 +41,17 @@ fn main() {
             color: Color::WHITE,
             brightness: 0.05,
         })
-
         // ==============
         // PHYSICS AND SHIT
         // ==============
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugins(RapierDebugRenderPlugin::default())
-
         // ==============
         // GAME PLUGINS
         // ==============
         .add_plugins(MenuPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(PlanetPlugin)
-
         // ============
         // DIAGNOSTIC DEBUG LOGGING
         // =============
@@ -71,9 +66,7 @@ fn main() {
     warn!("game exiting");
 }
 
-fn setup_world_scene(
-    mut commands: Commands,
-) {
+fn setup_world_scene(mut commands: Commands) {
     // 3 suns because night sucks
     commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
@@ -82,7 +75,9 @@ fn setup_world_scene(
             shadows_enabled: true,
             ..Default::default()
         },
-        transform: Transform::from_rotation(Quat::from_rotation_x(1.) * Quat::from_rotation_y(0.)* Quat::from_rotation_z(1.)),
+        transform: Transform::from_rotation(
+            Quat::from_rotation_x(1.) * Quat::from_rotation_y(0.) * Quat::from_rotation_z(1.),
+        ),
         ..default()
     });
 
@@ -93,7 +88,9 @@ fn setup_world_scene(
             shadows_enabled: true,
             ..Default::default()
         },
-        transform: Transform::from_rotation(Quat::from_rotation_x(-1.) * Quat::from_rotation_y(1.)* Quat::from_rotation_z(-1.)),
+        transform: Transform::from_rotation(
+            Quat::from_rotation_x(-1.) * Quat::from_rotation_y(1.) * Quat::from_rotation_z(-1.),
+        ),
         ..default()
     });
 
@@ -104,8 +101,9 @@ fn setup_world_scene(
             shadows_enabled: true,
             ..Default::default()
         },
-        transform: Transform::from_rotation(Quat::from_rotation_x(3.) * Quat::from_rotation_y(-1.)* Quat::from_rotation_z(0.)),
+        transform: Transform::from_rotation(
+            Quat::from_rotation_x(3.) * Quat::from_rotation_y(-1.) * Quat::from_rotation_z(0.),
+        ),
         ..default()
     });
-
 }

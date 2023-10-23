@@ -1,23 +1,23 @@
 // use std::collections::{vec_deque, VecDeque};
+use super::height::{height, PLANET_RADIUS};
+use super::menu::UiState;
+use crate::piramida::Piramidesc;
+use crate::piramida::Piramidă;
+use crate::triangle::Triangle;
 use bevy::prelude::*;
 use rayon::prelude::IntoParallelRefMutIterator;
-use super::menu::UiState;
-use crate::triangle::Triangle;
-use super::height::{apply_height, height, PLANET_RADIUS};
-use crate::piramida::Piramidă;
-use crate::piramida::Piramidesc;
 
 pub struct PlanetPlugin;
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
-        app
-        .add_systems(Startup, setup_planet)
-        .add_systems(PostStartup, setup_player_with_planet)
-        .add_systems(Update, (rotate_planet, rotate_player, update_triangle_split).chain());
+        app.add_systems(Startup, setup_planet)
+            .add_systems(PostStartup, setup_player_with_planet)
+            .add_systems(
+                Update,
+                (rotate_planet, rotate_player, update_triangle_split).chain(),
+            );
     }
 }
-
-
 
 #[allow(clippy::type_complexity)]
 fn update_triangle_split(
@@ -81,8 +81,6 @@ fn update_triangle_split(
     ui_state.mesh_count = mesh_count as f32;
 }
 
-
-
 /// A marker component for our shapes so we can query them separately from the ground plane
 #[derive(Component)]
 pub struct PlanetComponent;
@@ -109,7 +107,7 @@ fn setup_planet(
     ui_state: ResMut<UiState>,
 ) {
     warn!("TRIANGLE/PYRAMID SETUP SYSTEM...");
-   
+
     let debug_material = materials.add(StandardMaterial {
         base_color_texture: Some(images.add(uv_debug_texture())),
         ..default()
@@ -122,11 +120,7 @@ fn setup_planet(
         .spawn((
             PlanetComponent,
             SpatialBundle {
-                transform: Transform::from_xyz(
-                    0.,
-                    0.0,
-                    0.0,
-                ), // .with_rotation(Quat::from_rotation_x(-PI / 4.)),
+                transform: Transform::from_xyz(0., 0.0, 0.0), // .with_rotation(Quat::from_rotation_x(-PI / 4.)),
                 ..default()
             },
         ))
@@ -148,8 +142,8 @@ fn setup_planet(
     }
 }
 
-
-fn setup_player_with_planet(mut commands: Commands, 
+fn setup_player_with_planet(
+    mut commands: Commands,
     mut player_query: Query<Entity, With<PlayerComponent>>,
     mut flycam_state: ResMut<InputState>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -157,8 +151,8 @@ fn setup_player_with_planet(mut commands: Commands,
     mut query_planet: Query<Entity, With<PlanetComponent>>,
 ) {
     warn!("PLAYER CROSSHAIR SETUP SYSTEM...");
-        flycam_state.as_mut().pitch = 0.;
-        let crosshairs_id_x = commands
+    flycam_state.as_mut().pitch = 0.;
+    let crosshairs_id_x = commands
         .spawn((
             PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -195,22 +189,22 @@ fn setup_player_with_planet(mut commands: Commands,
         ))
         .id();
 
-    
-        let player = player_query.get_single_mut().expect("player not found!!");
-        let planet_ent = query_planet.get_single_mut().expect("planet not found!!");
-        commands.entity(player).set_parent(planet_ent);
-        commands.entity(crosshairs_id_x).set_parent(planet_ent);
-        commands.entity(crosshairs_id_y).set_parent(planet_ent);
-        commands.entity(crosshairs_id_z).set_parent(planet_ent);
-
+    let player = player_query.get_single_mut().expect("player not found!!");
+    let planet_ent = query_planet.get_single_mut().expect("planet not found!!");
+    commands.entity(player).set_parent(planet_ent);
+    commands.entity(crosshairs_id_x).set_parent(planet_ent);
+    commands.entity(crosshairs_id_y).set_parent(planet_ent);
+    commands.entity(crosshairs_id_z).set_parent(planet_ent);
 }
 
-fn rotate_planet(mut query_piramidă: Query<&mut Transform, With<PlanetComponent>>, time: Res<Time>) {
+fn rotate_planet(
+    mut query_piramidă: Query<&mut Transform, With<PlanetComponent>>,
+    time: Res<Time>,
+) {
     for mut transform in &mut query_piramidă {
         transform.rotate_x(time.delta_seconds() / 2.);
     }
 }
-
 
 // use bevy::ecs::event::Events;
 use crate::player::{FlyCam, InputState, MovementSettings};
@@ -226,7 +220,11 @@ fn rotate_player(
 
     mut query_crosshair_x: Query<
         (&mut Transform, Entity),
-        (With<CrosshairCubeX>, Without<FlyCam>, Without<PlayerComponent>),
+        (
+            With<CrosshairCubeX>,
+            Without<FlyCam>,
+            Without<PlayerComponent>,
+        ),
     >,
 
     mut query_crosshair_y: Query<
@@ -361,7 +359,7 @@ fn rotate_player(
     let _right = player_tr.right().normalize();
     let _forward = _up.cross(_right).normalize();
 
-    player_tr.translation.y = player_comp.camera_height + height(& player_tr.translation);
+    player_tr.translation.y = player_comp.camera_height + height(&player_tr.translation);
     let mut _pos_xz = Vec3::new(player_tr.translation.x, 0.0, player_tr.translation.z);
     let max_camera_xz = PLANET_RADIUS / 5.0;
     if _pos_xz.length() > max_camera_xz {

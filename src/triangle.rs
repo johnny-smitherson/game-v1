@@ -4,13 +4,10 @@ use bevy::prelude::*;
 use rand::Rng;
 
 use bevy::render::mesh::{Indices, PrimitiveTopology};
-use rayon::prelude::IntoParallelRefMutIterator;
+// use rayon::prelude::IntoParallelRefMutIterator;
 
-use super::menu::UiState;
+use super::height::apply_height;
 use crate::height::TerrainSettings;
-use super::height::{apply_height, height, PLANET_RADIUS};
-
-
 
 #[derive(Debug, Clone, Copy)]
 pub struct TriangleData {

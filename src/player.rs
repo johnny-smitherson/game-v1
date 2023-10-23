@@ -28,8 +28,6 @@ use bevy::core_pipeline::bloom::BloomSettings;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 
-
-
 // use bevy_atmosphere::prelude::AtmosphereCamera;
 /// Spawns the `Camera3dBundle` to be controlled
 fn setup_player(mut commands: Commands) {
@@ -72,7 +70,6 @@ fn setup_player(mut commands: Commands) {
     commands.entity(camera).set_parent(player);
     info!("camera: {:?} player: {:?}", camera, player);
 }
-
 
 fn cursor_grab(
     keys: Res<Input<KeyCode>>,
@@ -129,9 +126,6 @@ impl Default for MovementSettings {
 /// A marker component used in queries when you want flycams and not other cameras
 #[derive(Component)]
 pub struct FlyCam;
-
-
-
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {

@@ -1,9 +1,8 @@
 // use std::collections::{vec_deque, VecDeque};
 use bevy::prelude::*;
-use rayon::prelude::IntoParallelRefMutIterator;
-use super::menu::UiState;
+
+use super::height::PLANET_RADIUS;
 use crate::triangle::Triangle;
-use super::height::{apply_height, height, PLANET_RADIUS};
 
 pub trait Piramidesc {
     fn base_tris(&self) -> Vec<Triangle>;
@@ -29,14 +28,18 @@ impl Piramidă<1> {
         let v2 = Vec3::new(-1., 0., -1.);
         let v3 = Vec3::new(1., 0., -1.);
         Self {
-            children: [
-                Triangle::new([v1 * PLANET_RADIUS, v2* PLANET_RADIUS, v3* PLANET_RADIUS], 0, 0).reverse_points()
-            ]
+            children: [Triangle::new(
+                [v1 * PLANET_RADIUS, v2 * PLANET_RADIUS, v3 * PLANET_RADIUS],
+                0,
+                0,
+            )
+            .reverse_points()],
         }
     }
 }
 
 impl Piramidă<4> {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         let v1 = Vec3::new((8.0_f32 / 9.).sqrt(), 0., -1. / 3.);
         let v2 = Vec3::new(-(2.0_f32 / 9.).sqrt(), (2.0_f32 / 3.).sqrt(), -1. / 3.);
@@ -54,6 +57,7 @@ impl Piramidă<4> {
 }
 
 impl Piramidă<20> {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         let v1 = Vec3::new(0., -0.525731, 0.850651);
         let v2 = Vec3::new(0.850651, 0., 0.525731);
@@ -94,4 +98,3 @@ impl Piramidă<20> {
         }
     }
 }
-
