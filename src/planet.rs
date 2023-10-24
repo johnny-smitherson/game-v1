@@ -1,37 +1,55 @@
 // use std::collections::{vec_deque, VecDeque};
 use super::height::{height, PLANET_RADIUS};
 use super::menu::UiMenuState;
+use crate::game_assets::BulletAssets;
 use crate::piramida::Piramidesc;
 use crate::piramida::Piramidă;
 use crate::triangle::Triangle;
 use bevy::prelude::shape::Cube;
 use bevy::prelude::*;
+use bevy_hanabi::prelude::*;
 use bevy_rapier3d::prelude::*;
 use rayon::prelude::IntoParallelRefMutIterator;
 
 pub struct PlanetPlugin;
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_planet).add_systems(
-            Update,
-            (rotate_player, update_triangle_split, shoot_cube).chain(),
-        );
+        app.add_systems(Startup, setup_planet)
+            .add_systems(Update, (rotate_player, update_triangle_split).chain())
+            .add_systems(Update, (shoot_bullet, capture_bullet_impact).chain())
+            .add_systems(PostUpdate, on_bullet_impact);
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct Bullet;
 
-fn shoot_cube(
+#[derive(Component)]
+pub struct BulletHit {
+    other_thing_hit: Entity,
+    // hit_location: Vec3,
+}
+
+fn on_bullet_impact(
+    mut commands: Commands,
+    mut hits: Query<(Entity, &mut Bullet, &mut BulletHit)>,
+) {
+    for (bullet_ent, mut bullet, bullet_hit) in hits.iter() {
+        // trigger some events and shit
+        // TODO
+
+        // finally, delete the bullet
+        commands.entity(bullet_ent).despawn();
+    }
+}
+
+fn shoot_bullet(
     mut commands: Commands,
     ui_state: Res<UiMenuState>,
     mouse_button: Res<Input<MouseButton>>,
     player_query: Query<&mut Transform, With<PlayerComponent>>,
     camera_query: Query<&mut GlobalTransform, (With<FlyCam>, Without<PlayerComponent>)>,
-
-    // TODO: DELETE THESE SAVE IN BULLET BUNDLE
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    bullet_assets: Res<BulletAssets>,
 ) {
     if !ui_state.is_mouse_captured {
         return;
@@ -42,32 +60,27 @@ fn shoot_cube(
     let camera_tr = camera_query.get_single().expect("no camera wtf.");
     let player_tr = player_query.get_single().expect("no player wtf.");
 
-    const SHOOT_IMPULSE: f32 = 1000.0;
-    const SHOOT_ROTATION: f32 = 100.0;
+    const SHOOT_IMPULSE: f32 = 100.0;
+    const SHOOT_ROTATION: f32 = 10.0;
     const SHOOT_EXTRA_FORWARD: f32 = 1.5;
-    const SHOOT_CUBE_SIZE: f32 = 1.0;
 
     let fwd = camera_tr.forward();
+    let quat = Quat::from_rotation_arc(Vec3::Z, fwd);
     let spawn_pos = player_tr.translation + fwd * SHOOT_EXTRA_FORWARD;
 
-    commands
+    let bullet_id = commands
         .spawn((
             Bullet,
             PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube {
-                    size: SHOOT_CUBE_SIZE,
-                })),
-                material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-                transform: Transform::from_translation(spawn_pos),
+                mesh: bullet_assets.mesh.clone(),
+                material: bullet_assets.material.clone(),
+                transform: Transform::from_translation(spawn_pos).with_rotation(quat),
                 ..default()
             },
         ))
         .insert(RigidBody::Dynamic)
-        .insert(Collider::cuboid(
-            SHOOT_CUBE_SIZE / 2.0_f32,
-            SHOOT_CUBE_SIZE / 2.0_f32,
-            SHOOT_CUBE_SIZE / 2.0_f32,
-        ))
+        .insert(ColliderMassProperties::Density(2.0))
+        .insert(bullet_assets.collider.clone())
         .insert(Ccd::enabled())
         .insert(Damping {
             linear_damping: 0.05,
@@ -75,9 +88,36 @@ fn shoot_cube(
         })
         .insert(ExternalImpulse {
             impulse: fwd * SHOOT_IMPULSE,
-            torque_impulse: Vec3::new(0.0, 0.0, SHOOT_ROTATION),
+            torque_impulse: quat * Vec3::new(0.0, 0.0, SHOOT_ROTATION),
         })
-        .insert(Name::new("BULLET"));
+        .insert(ActiveEvents::COLLISION_EVENTS)
+        .insert(Name::new("BULLET")).id();
+        
+        commands.spawn(ParticleEffectBundle {
+            effect: ParticleEffect::new(bullet_assets.flying_effect.clone()),
+            ..Default::default()
+        } ).set_parent(bullet_id);
+}
+
+fn capture_bullet_impact(
+    mut commands: Commands,
+    mut collision_events: EventReader<CollisionEvent>,
+    mut bullet_query: Query<Entity, With<Bullet>>,
+) {
+    for collision_event in collision_events.iter() {
+        if let CollisionEvent::Started(col1, col2, _flags) = collision_event {
+            if bullet_query.contains(col1.clone()) {
+                commands.entity(col1.clone()).insert(BulletHit {
+                    other_thing_hit: col2.clone(),
+                });
+            }
+            if bullet_query.contains(col2.clone()) {
+                commands.entity(col2.clone()).insert(BulletHit {
+                    other_thing_hit: col1.clone(),
+                });
+            }
+        }
+    }
 }
 
 #[allow(clippy::type_complexity)]
@@ -174,10 +214,7 @@ fn setup_planet(
     let planet_ent = commands
         .spawn((
             PlanetComponent,
-            SpatialBundle {
-                transform: Transform::from_xyz(0., 0.0, 0.0), // .with_rotation(Quat::from_rotation_x(-PI / 4.)),
-                ..default()
-            },
+            SpatialBundle::default(),
             Name::new("THE PLANET"),
         ))
         .id();
@@ -194,6 +231,7 @@ fn setup_planet(
                     ..default()
                 },
                 tri,
+                RigidBody::Fixed,
                 collider,
                 Ccd::enabled(),
                 // PickableBundle::default(),
