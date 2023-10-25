@@ -16,7 +16,6 @@ use bevy::{
     prelude::*,
     window::{PresentMode, WindowResolution},
 };
-use bevy_hanabi::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
 

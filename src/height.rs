@@ -1,4 +1,6 @@
-use bevy::prelude::Vec3;
+use bevy::prelude::*;
+use bevy::{prelude::Vec3, reflect::TypePath};
+use bevy_inspector_egui::prelude::*;
 use noise::{Billow, NoiseFn, Perlin};
 
 pub const NOISE_SEED: f32 = 0.0;
@@ -8,7 +10,8 @@ pub const PLANET_RADIUS: f32 = 100000.0;
 pub const NOISE_BASE_FREQ: f32 = 10000.0;
 
 #[allow(non_snake_case)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Reflect, InspectorOptions)]
+#[reflect(InspectorOptions)]
 pub struct TerrainSettings {
     pub MAX_SPLIT_LEVEL: u8,
     pub MIN_SPLIT_LEVEL: u8,

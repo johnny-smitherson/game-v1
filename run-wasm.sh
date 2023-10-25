@@ -1,0 +1,1 @@
+cargo build --release --profile release-wasm --target wasm32-unknown-unknown && wasm-server-runner target/wasm32-unknown-unknown/release-wasm/game-v3.wasm

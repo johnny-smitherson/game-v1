@@ -1,7 +1,11 @@
 use bevy::ecs::event::ManualEventReader;
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
+use bevy::reflect::{TypePath, TypeUuid};
+use bevy_inspector_egui::prelude::InspectorOptions;
+use bevy_inspector_egui::prelude::ReflectInspectorOptions;
 use bevy_rapier3d::prelude::*;
+
 // use bevy_flycam::FlyCam;
 // use bevy_flycam::NoGrabNoPlayerPlugin;
 
@@ -93,16 +97,21 @@ fn toggle_grab_cursor(window: &mut Window) {
 }
 
 /// Keeps track of mouse motion events, pitch, and yaw
-#[derive(Resource, Default)]
+#[derive(Reflect, Resource, Default, InspectorOptions)]
+#[reflect(Resource)]
+#[reflect(from_reflect = false)]
 pub struct InputState {
-    pub reader_motion: ManualEventReader<MouseMotion>,
     pub pitch: f32,
     pub yaw: f32,
+    #[reflect(ignore)]
+    pub reader_motion: ManualEventReader<MouseMotion>,
 }
 
 /// Mouse sensitivity and movement speed
 
-#[derive(Resource)]
+#[derive(Reflect, Resource, InspectorOptions)]
+#[reflect(Resource)]
+
 pub struct MovementSettings {
     pub sensitivity: f32,
     pub speed: f32,
@@ -126,7 +135,9 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreStartup, setup_player)
             .init_resource::<InputState>()
+            .register_type::<InputState>()
             .init_resource::<MovementSettings>()
+            .register_type::<MovementSettings>()
             .add_systems(Update, cursor_grab);
     }
 }

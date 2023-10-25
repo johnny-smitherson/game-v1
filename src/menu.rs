@@ -3,9 +3,12 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 
 use super::height::TerrainSettings;
+use bevy_inspector_egui::prelude::InspectorOptions;
 
-#[derive(Resource, Default)]
+#[derive(Reflect, Resource, Default, InspectorOptions)]
+#[reflect(Resource)]
 pub struct UiMenuState {
+    #[reflect(ignore)]
     pub settings: TerrainSettings,
     pub enable_animation: bool,
     pub triangle_count: f32,
@@ -73,6 +76,7 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin)
             .init_resource::<UiMenuState>()
+            .register_type::<UiMenuState>()
             .add_systems(
                 Update,
                 (egui_ui_system, cursor_grab_click.run_if(allow_player_input)).chain(),

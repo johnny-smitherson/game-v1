@@ -1,13 +1,12 @@
 // use std::collections::{vec_deque, VecDeque};
 use super::height::{height, PLANET_RADIUS};
 use super::menu::UiMenuState;
-use crate::game_assets::BulletAssets;
+use crate::game_assets::{BulletAssets, GameSceneAssets};
 use crate::piramida::Piramidesc;
 use crate::piramida::Piramidă;
 use crate::triangle::Triangle;
 use bevy::prelude::shape::Cube;
 use bevy::prelude::*;
-use bevy_hanabi::prelude::*;
 use bevy_rapier3d::prelude::*;
 use rayon::prelude::IntoParallelRefMutIterator;
 
@@ -28,6 +27,22 @@ pub struct Bullet;
 pub struct BulletHit {
     other_thing_hit: Entity,
     // hit_location: Vec3,
+}
+
+fn spawn_gltf(mut commands: Commands, scene_assets: Mut<GameSceneAssets>) {
+    // note that we have to include the `Scene0` label
+
+    // to position our 3d model, simply use the Transform
+    // in the SceneBundle
+    commands.spawn(SceneBundle {
+        scene: scene_assets
+            .scenes
+            .get("ORIGINAL/Tanks and Armored Vehicle.glb")
+            .expect("KEY NOT FOUND")
+            .clone(),
+        transform: Transform::from_xyz(2.0, 0.0, -5.0),
+        ..Default::default()
+    });
 }
 
 fn on_bullet_impact(
@@ -91,12 +106,15 @@ fn shoot_bullet(
             torque_impulse: quat * Vec3::new(0.0, 0.0, SHOOT_ROTATION),
         })
         .insert(ActiveEvents::COLLISION_EVENTS)
-        .insert(Name::new("BULLET")).id();
-        
-        commands.spawn(ParticleEffectBundle {
-            effect: ParticleEffect::new(bullet_assets.flying_effect.clone()),
+        .insert(Name::new("BULLET"))
+        .id();
+
+    commands
+        .spawn(bevy_hanabi::prelude::ParticleEffectBundle {
+            effect: bevy_hanabi::ParticleEffect::new(bullet_assets.flying_effect.clone()),
             ..Default::default()
-        } ).set_parent(bullet_id);
+        })
+        .set_parent(bullet_id);
 }
 
 fn capture_bullet_impact(
@@ -328,12 +346,14 @@ fn rotate_player(
         {
             use bevy::input::mouse::MouseScrollUnit;
             for ev in scroll_evr.iter() {
-                match ev.unit {
-                    MouseScrollUnit::Line => {
-                        player_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
-                    }
-                    MouseScrollUnit::Pixel => {
-                        player_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
+                if ui_state.is_mouse_captured {
+                    match ev.unit {
+                        MouseScrollUnit::Line => {
+                            player_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
+                        }
+                        MouseScrollUnit::Pixel => {
+                            player_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
+                        }
                     }
                 }
             }

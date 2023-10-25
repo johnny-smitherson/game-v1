@@ -6,17 +6,52 @@ use crate::piramida::Piramidă;
 use crate::triangle::Triangle;
 use bevy::prelude::shape::Cube;
 use bevy::prelude::*;
+use bevy::utils::HashMap;
 use bevy_hanabi::prelude::*;
+use bevy_inspector_egui::prelude::InspectorOptions;
 use bevy_rapier3d::prelude::*;
 use rayon::prelude::IntoParallelRefMutIterator;
 
-#[derive(Resource, Default)]
+#[derive(Reflect, Resource, Default, InspectorOptions)]
+#[reflect(Resource)]
 pub struct BulletAssets {
     pub flying_effect: Handle<EffectAsset>,
     pub hit_effect: Handle<EffectAsset>,
     pub mesh: Handle<Mesh>,
     pub material: Handle<StandardMaterial>,
+    #[reflect(ignore)]
     pub collider: Collider,
+}
+
+#[derive(Reflect, Resource, Default, InspectorOptions)]
+#[reflect(Resource)]
+pub struct GameSceneAssets {
+    pub scenes: HashMap<String, Handle<Scene>>,
+}
+
+fn load_glb_scenes(mut scene_assets: ResMut<GameSceneAssets>, ass: Res<AssetServer>) {
+    let filenames = [
+        "Tanks and Armored Vehicle.glb",
+        "Tanks and Armored Vehicle(1).glb",
+        "Tanks and Armored Vehicle(2).glb",
+        "Tanks and Armored Vehicle(3).glb",
+    ];
+
+    for prefix in ["ORIGINAL", "ANGLE_DISSOLVE"] {
+        for filename in filenames {
+            let mut path = prefix.to_owned();
+            path.push_str("/");
+            path.push_str(filename);
+            let key = path.clone();
+            path.push_str("#Scene0");
+            let path = path;
+            info!("LOADING GLB SCENE: {}", path);
+
+            let my_gltf: Handle<Scene> = ass.load(path);
+
+            scene_assets.scenes.insert(key, my_gltf);
+        }
+    }
 }
 
 pub struct GameAssetsPlugin;
@@ -24,13 +59,16 @@ impl Plugin for GameAssetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(HanabiPlugin)
             .init_resource::<BulletAssets>()
-            .add_systems(Startup, setup_bullet_assets);
+            .register_type::<BulletAssets>()
+            .init_resource::<GameSceneAssets>()
+            .register_type::<GameSceneAssets>()
+            .add_systems(Startup, (setup_bullet_assets, load_glb_scenes));
     }
 }
 
 fn setup_bullet_assets(
     mut effects: ResMut<Assets<EffectAsset>>,
-    // TODO: DELETE THESE SAVE IN BULLET BUNDLE
+
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut bullet_assets: ResMut<BulletAssets>,
@@ -107,7 +145,6 @@ fn get_flying_effect() -> EffectAsset {
     // Insert into the asset system
     effect
 }
-
 
 fn get_firework_effect() -> EffectAsset {
     let mut color_gradient1 = Gradient::new();
