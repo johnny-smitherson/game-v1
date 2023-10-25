@@ -5,7 +5,7 @@ use crate::game_assets::{BulletAssets, GameSceneAssets};
 use crate::piramida::Piramidesc;
 use crate::piramida::Piramidă;
 use crate::triangle::Triangle;
-use bevy::prelude::shape::Cube;
+
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 use rayon::prelude::IntoParallelRefMutIterator;
@@ -45,11 +45,8 @@ fn spawn_gltf(mut commands: Commands, scene_assets: Mut<GameSceneAssets>) {
     });
 }
 
-fn on_bullet_impact(
-    mut commands: Commands,
-    mut hits: Query<(Entity, &mut Bullet, &mut BulletHit)>,
-) {
-    for (bullet_ent, mut bullet, bullet_hit) in hits.iter() {
+fn on_bullet_impact(mut commands: Commands, hits: Query<(Entity, &mut Bullet, &mut BulletHit)>) {
+    for (bullet_ent, _bullet, _bullet_hit) in hits.iter() {
         // trigger some events and shit
         // TODO
 
@@ -120,7 +117,7 @@ fn shoot_bullet(
 fn capture_bullet_impact(
     mut commands: Commands,
     mut collision_events: EventReader<CollisionEvent>,
-    mut bullet_query: Query<Entity, With<Bullet>>,
+    bullet_query: Query<Entity, With<Bullet>>,
 ) {
     for collision_event in collision_events.iter() {
         if let CollisionEvent::Started(col1, col2, _flags) = collision_event {

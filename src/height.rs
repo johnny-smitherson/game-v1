@@ -1,5 +1,5 @@
+use bevy::prelude::Vec3;
 use bevy::prelude::*;
-use bevy::{prelude::Vec3, reflect::TypePath};
 use bevy_inspector_egui::prelude::*;
 use noise::{Billow, NoiseFn, Perlin};
 

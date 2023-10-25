@@ -12,12 +12,13 @@ use planet::PlanetPlugin;
 use player::PlayerPlugin;
 
 use bevy::{
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
     window::{PresentMode, WindowResolution},
 };
+use bevy_atmosphere::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
+use bevy_screen_diagnostics::{ScreenDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin};
 
 fn main() {
     App::new()
@@ -38,7 +39,7 @@ fn main() {
                 }),
         )
         .insert_resource(Msaa::Sample4)
-        .add_systems(PreStartup, setup_world_scene)
+        // .add_systems(PreStartup, setup_world_scene)
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 0.05,
@@ -58,8 +59,9 @@ fn main() {
         // ============
         // DIAGNOSTIC DEBUG LOGGING
         // =============
-        .add_plugins(LogDiagnosticsPlugin::default())
-        .add_plugins(FrameTimeDiagnosticsPlugin::default())
+        // .add_plugins(LogDiagnosticsPlugin::default())
+        .add_plugins(ScreenDiagnosticsPlugin::default())
+        .add_plugins(ScreenFrameDiagnosticsPlugin)
         .add_plugins(WorldInspectorPlugin::default())
         // .add_plugins(DefaultPickingPlugins)
         // .add_plugin(DebugCursorPickingPlugin) // <- Adds the debug cursor (optional)

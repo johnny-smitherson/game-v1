@@ -1,10 +1,75 @@
 use bevy::ecs::event::ManualEventReader;
 use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
-use bevy::reflect::{TypePath, TypeUuid};
+use bevy_atmosphere::prelude::*;
 use bevy_inspector_egui::prelude::InspectorOptions;
-use bevy_inspector_egui::prelude::ReflectInspectorOptions;
-use bevy_rapier3d::prelude::*;
+use core::f32::consts::PI;
+
+/// A marker component used in queries when you want flycams and not other cameras
+#[derive(Component)]
+pub struct FlyCam;
+
+// Marker for updating the position of the light, not needed unless we have multiple lights
+#[derive(Component)]
+struct Sun;
+
+// Timer for updating the daylight cycle (updating the atmosphere every frame is slow, so it's better to do incremental changes)
+#[derive(Resource)]
+struct CycleTimer(Timer);
+
+fn daylight_cycle(
+    mut atmosphere: AtmosphereMut<Nishita>,
+    mut query: Query<(&mut Transform, &mut DirectionalLight), With<Sun>>,
+    mut timer: ResMut<CycleTimer>,
+    time: Res<Time>,
+) {
+    timer.0.tick(time.delta());
+
+    if timer.0.finished() {
+        let time = time.elapsed_seconds_wrapped() / 200.0;
+        let t = PI / 2.0 + time.sin() * 0.35;
+
+        atmosphere.sun_position = Vec3::new(0., t.sin(), t.cos());
+
+        for (mut light_trans, mut directional) in query.iter_mut() {
+            light_trans.rotation = Quat::from_rotation_x(-t);
+            directional.illuminance = t.sin().max(0.0).powf(2.0) * 8000.0;
+        }
+    }
+}
+
+fn setup_sun(mut commands: Commands) {
+    // Our Sun
+    commands.spawn((
+        DirectionalLightBundle {
+            transform: Transform::from_rotation(Quat::from_rotation_x(-PI / 2.0)),
+            directional_light: DirectionalLight {
+                illuminance: 8000.0,
+                ..default()
+            },
+            ..Default::default()
+        },
+        Sun,
+    ));
+}
+
+pub struct PlayerPlugin;
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<InputState>()
+            .register_type::<InputState>()
+            .init_resource::<MovementSettings>()
+            .register_type::<MovementSettings>()
+            .add_plugins(AtmospherePlugin)
+            .insert_resource(AtmosphereModel::default())
+            .insert_resource(CycleTimer(Timer::new(
+                bevy::utils::Duration::from_millis(500),
+                TimerMode::Repeating,
+            )))
+            .add_systems(PreStartup, (setup_player, setup_sun))
+            .add_systems(Update, (cursor_grab, daylight_cycle));
+    }
+}
 
 // use bevy_flycam::FlyCam;
 // use bevy_flycam::NoGrabNoPlayerPlugin;
@@ -33,8 +98,6 @@ use bevy::core_pipeline::bloom::BloomSettings;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 
-// use bevy_atmosphere::prelude::AtmosphereCamera;
-/// Spawns the `Camera3dBundle` to be controlled
 fn setup_player(mut commands: Commands) {
     warn!("PLAYER SETUP SYSTEM...");
 
@@ -45,12 +108,17 @@ fn setup_player(mut commands: Commands) {
                     hdr: true,
                     ..default()
                 },
+                projection: Projection::Perspective(PerspectiveProjection {
+                    near: 0.1,
+                    far: 100000.0,
+                    ..default()
+                }),
 
                 tonemapping: Tonemapping::BlenderFilmic,
                 ..Default::default()
             },
             FlyCam,
-            // AtmosphereCamera::default(),
+            AtmosphereCamera::default(),
             BloomSettings {
                 ..default() // intensity: 0.02,
                             // scale: 0.5,
@@ -123,21 +191,5 @@ impl Default for MovementSettings {
             sensitivity: 0.00012,
             speed: 4.02,
         }
-    }
-}
-
-/// A marker component used in queries when you want flycams and not other cameras
-#[derive(Component)]
-pub struct FlyCam;
-
-pub struct PlayerPlugin;
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, setup_player)
-            .init_resource::<InputState>()
-            .register_type::<InputState>()
-            .init_resource::<MovementSettings>()
-            .register_type::<MovementSettings>()
-            .add_systems(Update, cursor_grab);
     }
 }

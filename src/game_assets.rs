@@ -1,16 +1,10 @@
 // use std::collections::{vec_deque, VecDeque};
-use super::height::{height, PLANET_RADIUS};
-use super::menu::UiMenuState;
-use crate::piramida::Piramidesc;
-use crate::piramida::Piramidă;
-use crate::triangle::Triangle;
-use bevy::prelude::shape::Cube;
+
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_hanabi::prelude::*;
 use bevy_inspector_egui::prelude::InspectorOptions;
 use bevy_rapier3d::prelude::*;
-use rayon::prelude::IntoParallelRefMutIterator;
 
 #[derive(Reflect, Resource, Default, InspectorOptions)]
 #[reflect(Resource)]
