@@ -1,10 +1,15 @@
 // use std::collections::{vec_deque, VecDeque};
-use super::height::{height, PLANET_RADIUS};
 use super::menu::UiMenuState;
-use crate::game_assets::{BulletAssets, GameSceneAssets};
+use super::terrain::{height, PLANET_RADIUS};
 use crate::piramida::Piramidesc;
 use crate::piramida::Piramidă;
 use crate::triangle::Triangle;
+
+// use bevy::ecs::event::Events;
+use crate::flying_camera::{FlyingCamera, FlyingCameraInputState, FlyingCameraMovementSettings};
+use bevy::input::mouse::MouseMotion;
+use bevy::input::mouse::MouseWheel;
+use bevy::window::{CursorGrabMode, PrimaryWindow};
 
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
@@ -14,143 +19,29 @@ pub struct PlanetPlugin;
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_planet)
-            .add_systems(Update, (rotate_player, update_triangle_split).chain())
-            .add_systems(Update, (shoot_bullet, capture_bullet_impact).chain())
-            .add_systems(PostUpdate, on_bullet_impact);
+            .add_systems(Update, (rotate_player, update_triangle_split).chain());
     }
 }
 
-#[derive(Component, Default)]
-pub struct Bullet;
-
-#[derive(Component)]
-pub struct BulletHit {
-    other_thing_hit: Entity,
-    // hit_location: Vec3,
-}
-
-fn spawn_gltf(mut commands: Commands, scene_assets: Mut<GameSceneAssets>) {
-    // note that we have to include the `Scene0` label
-
-    // to position our 3d model, simply use the Transform
-    // in the SceneBundle
-    commands.spawn(SceneBundle {
-        scene: scene_assets
-            .scenes
-            .get("ORIGINAL/Tanks and Armored Vehicle.glb")
-            .expect("KEY NOT FOUND")
-            .clone(),
-        transform: Transform::from_xyz(2.0, 0.0, -5.0),
-        ..Default::default()
-    });
-}
-
-fn on_bullet_impact(mut commands: Commands, hits: Query<(Entity, &mut Bullet, &mut BulletHit)>) {
-    for (bullet_ent, _bullet, _bullet_hit) in hits.iter() {
-        // trigger some events and shit
-        // TODO
-
-        // finally, delete the bullet
-        commands.entity(bullet_ent).despawn();
-    }
-}
-
-fn shoot_bullet(
-    mut commands: Commands,
-    ui_state: Res<UiMenuState>,
-    mouse_button: Res<Input<MouseButton>>,
-    player_query: Query<&mut Transform, With<PlayerComponent>>,
-    camera_query: Query<&mut GlobalTransform, (With<FlyCam>, Without<PlayerComponent>)>,
-    bullet_assets: Res<BulletAssets>,
-) {
-    if !ui_state.is_mouse_captured {
-        return;
-    }
-    if !mouse_button.just_pressed(MouseButton::Left) {
-        return;
-    }
-    let camera_tr = camera_query.get_single().expect("no camera wtf.");
-    let player_tr = player_query.get_single().expect("no player wtf.");
-
-    const SHOOT_IMPULSE: f32 = 100.0;
-    const SHOOT_ROTATION: f32 = 10.0;
-    const SHOOT_EXTRA_FORWARD: f32 = 1.5;
-
-    let fwd = camera_tr.forward();
-    let quat = Quat::from_rotation_arc(Vec3::Z, fwd);
-    let spawn_pos = player_tr.translation + fwd * SHOOT_EXTRA_FORWARD;
-
-    let bullet_id = commands
-        .spawn((
-            Bullet,
-            PbrBundle {
-                mesh: bullet_assets.mesh.clone(),
-                material: bullet_assets.material.clone(),
-                transform: Transform::from_translation(spawn_pos).with_rotation(quat),
-                ..default()
-            },
-        ))
-        .insert(RigidBody::Dynamic)
-        .insert(ColliderMassProperties::Density(2.0))
-        .insert(bullet_assets.collider.clone())
-        .insert(Ccd::enabled())
-        .insert(Damping {
-            linear_damping: 0.05,
-            angular_damping: 0.05,
-        })
-        .insert(ExternalImpulse {
-            impulse: fwd * SHOOT_IMPULSE,
-            torque_impulse: quat * Vec3::new(0.0, 0.0, SHOOT_ROTATION),
-        })
-        .insert(ActiveEvents::COLLISION_EVENTS)
-        .insert(Name::new("BULLET"))
-        .id();
-
-    commands
-        .spawn(bevy_hanabi::prelude::ParticleEffectBundle {
-            effect: bevy_hanabi::ParticleEffect::new(bullet_assets.flying_effect.clone()),
-            ..Default::default()
-        })
-        .set_parent(bullet_id);
-}
-
-fn capture_bullet_impact(
-    mut commands: Commands,
-    mut collision_events: EventReader<CollisionEvent>,
-    bullet_query: Query<Entity, With<Bullet>>,
-) {
-    for collision_event in collision_events.iter() {
-        if let CollisionEvent::Started(col1, col2, _flags) = collision_event {
-            if bullet_query.contains(col1.clone()) {
-                commands.entity(col1.clone()).insert(BulletHit {
-                    other_thing_hit: col2.clone(),
-                });
-            }
-            if bullet_query.contains(col2.clone()) {
-                commands.entity(col2.clone()).insert(BulletHit {
-                    other_thing_hit: col1.clone(),
-                });
-            }
-        }
-    }
-}
+#[derive(Reflect, Component, Default)]
+pub struct TerrainSplitProbe;
 
 #[allow(clippy::type_complexity)]
 fn update_triangle_split(
-    player_query: Query<&Transform, With<PlayerComponent>>,
+    probe_query: Query<&Transform, With<TerrainSplitProbe>>,
     mut tri_query: Query<
         (&mut Triangle, &mut Handle<Mesh>, &mut Collider),
         (
             With<Triangle>,
             With<Handle<Mesh>>,
             With<Collider>,
-            Without<PlayerComponent>,
+            Without<TerrainSplitProbe>,
         ),
     >,
     mut ui_state: ResMut<UiMenuState>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let player_pos = player_query.single().translation;
+    let probe_pos: Vec<Vec3> = probe_query.iter().map(|x| x.translation).collect();
     // serial version
     // for (mut tri, mut mesh_handle) in tri_query.iter_mut() {
     //     let changed = tri.as_mut().update_split(&player_pos);
@@ -173,7 +64,7 @@ fn update_triangle_split(
     let query_results: Vec<Option<_>> = query_args
         .par_iter_mut()
         .map(|(tri, mesh_handle, collider)| {
-            let changed = tri.update_split(&player_pos, &ui_state.settings);
+            let changed = tri.update_split(&probe_pos, &ui_state.settings);
             if changed {
                 let (mesh, new_collider) = tri.generate_mesh(&ui_state.settings);
                 *collider.as_mut() = new_collider;
@@ -207,7 +98,7 @@ fn update_triangle_split(
 #[derive(Component)]
 pub struct PlanetComponent;
 
-use super::player::PlayerComponent;
+use super::flying_camera::FlyingCameraPivot;
 
 fn setup_planet(
     mut commands: Commands,
@@ -257,25 +148,19 @@ fn setup_planet(
     }
 }
 
-// use bevy::ecs::event::Events;
-use crate::player::{FlyCam, InputState, MovementSettings};
-use bevy::input::mouse::MouseMotion;
-use bevy::input::mouse::MouseWheel;
-use bevy::window::{CursorGrabMode, PrimaryWindow};
-
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::type_complexity)]
 fn rotate_player(
-    mut query_player: Query<(&mut Transform, &mut PlayerComponent), With<PlayerComponent>>,
-    mut query_camera: Query<&mut Transform, (With<FlyCam>, Without<PlayerComponent>)>,
+    mut query_player: Query<(&mut Transform, &mut FlyingCameraPivot), With<FlyingCameraPivot>>,
+    mut query_camera: Query<&mut Transform, (With<FlyingCamera>, Without<FlyingCameraPivot>)>,
 
     time: Res<Time>,
-    mut mouse_input_state: ResMut<InputState>,
+    mut mouse_input_state: ResMut<FlyingCameraInputState>,
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
     mouse_motion_events: Res<Events<MouseMotion>>,
     mut scroll_evr: EventReader<MouseWheel>,
     keys: Res<Input<KeyCode>>,
-    settings: Res<MovementSettings>,
+    settings: Res<FlyingCameraMovementSettings>,
     mut ui_state: ResMut<UiMenuState>,
 ) {
     // mouse movements
@@ -314,8 +199,6 @@ fn rotate_player(
                     KeyCode::S => velocity -= _forward,
                     KeyCode::A => velocity -= _right,
                     KeyCode::D => velocity += _right,
-                    // KeyCode::Space => velocity += _up,
-                    // KeyCode::ControlLeft => velocity -= _up,
                     _ => (),
                 }
             }

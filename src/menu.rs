@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 
-use super::height::TerrainSettings;
+use super::terrain::TerrainSettings;
 use bevy_inspector_egui::prelude::InspectorOptions;
 
 #[derive(Reflect, Resource, Default, InspectorOptions)]

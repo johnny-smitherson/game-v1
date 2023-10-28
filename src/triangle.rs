@@ -6,8 +6,8 @@ use rand::Rng;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 // use rayon::prelude::IntoParallelRefMutIterator;
 
-use super::height::apply_height;
-use crate::height::TerrainSettings;
+use super::terrain::apply_height;
+use crate::terrain::TerrainSettings;
 use bevy_rapier3d::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
@@ -185,7 +185,7 @@ impl Triangle {
     }
 
     /// returns true if we changed something notable and you wanna update the thing
-    pub fn update_split(&mut self, pos: &Vec3, settings: &TerrainSettings) -> bool {
+    pub fn update_split(&mut self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
         use rayon::prelude::*;
 
         let mut dirty: bool = false;
@@ -237,7 +237,7 @@ impl Triangle {
         }
     }
 
-    fn should_split(&self, pos: &Vec3, settings: &TerrainSettings) -> bool {
+    fn should_split(&self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
         if self.level < settings.MIN_SPLIT_LEVEL {
             return true;
         }
@@ -251,7 +251,7 @@ impl Triangle {
                 < (1.0 - settings.SPLIT_LAZY_COEF) * settings.TESSELATION_VALUE
         }
     }
-    fn should_merge(&self, pos: &Vec3, settings: &TerrainSettings) -> bool {
+    fn should_merge(&self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
         if self.level > settings.MAX_SPLIT_LEVEL {
             true
         } else {
@@ -260,7 +260,12 @@ impl Triangle {
         }
     }
 
-    fn get_distance_over_size(&self, pos: &Vec3) -> f32 {
-        (*pos - self.data.center).length() / self.data.min_edge_len
+    fn get_distance_over_size(&self, all_pos: &Vec<Vec3>) -> f32 {
+        all_pos
+            .iter()
+            .map(|pos| (*pos - self.data.center).length())
+            .min_by(|a, b| a.partial_cmp(b).unwrap())
+            .unwrap()
+            / self.data.min_edge_len
     }
 }

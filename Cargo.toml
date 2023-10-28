@@ -5,8 +5,19 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+# Defines a feature named `webp` that does not enable any other features.
+default = ["fast-compile"]
+fast-compile = ["bevy/dynamic_linking"]
+wasm = []
+
 [dependencies]
-bevy = { version = "0.11.3", features = ["tonemapping_luts",  "dynamic_linking", "bevy_gltf"] }
+bevy = { version = "0.11.3", features = [
+    "tonemapping_luts",  
+    "bevy_gltf",
+    "jpeg", "png",
+    "filesystem_watcher",
+] }
 bevy-inspector-egui = "0.20"
 bevy_egui = "0.22.0"
 noise = "0.8.2"
@@ -16,11 +27,7 @@ bevy_rapier3d = { version = "0.22", features = [ "simd-stable", "debug-render-3d
 bevy_hanabi = "0.7"
 bevy_screen_diagnostics = "0.3"
 bevy_atmosphere = "0.7"
-
-# [features]
-# dev = [
-#     "bevy/bevy_dylib",
-# ]
+smart-default = "0.7.1"
 
 [workspace]
 resolver = "2" # Important! wgpu/Bevy needs this!
@@ -46,13 +53,9 @@ codegen-units = 1
 inherits = "release"
 
 [profile.release-wasm]
-debug = false
 inherits = "release"
-lto = true
+debug = false
+lto = false
 opt-level = 's'
 panic = "abort"
 strip = true
-
-
-[target.wasm32-unknown-unknown]
-runner = "wasm-server-runner"

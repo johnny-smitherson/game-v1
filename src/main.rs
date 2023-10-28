@@ -1,32 +1,44 @@
+mod flying_camera;
 mod game_assets;
-mod height;
+mod gameplay;
 mod menu;
 mod piramida;
 mod planet;
-mod player;
+mod terrain;
 mod triangle;
 
+use flying_camera::FlyingCameraPlugin;
 use game_assets::GameAssetsPlugin;
+use gameplay::GameplayPlugin;
 use menu::MenuPlugin;
 use planet::PlanetPlugin;
-use player::PlayerPlugin;
 
 use bevy::{
     prelude::*,
+    render::{
+        settings::{WgpuFeatures, WgpuSettings},
+        RenderPlugin,
+    },
     window::{PresentMode, WindowResolution},
 };
-use bevy_atmosphere::prelude::*;
+
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
 use bevy_screen_diagnostics::{ScreenDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin};
 
 fn main() {
+    let mut wgpu_settings = WgpuSettings::default();
+    wgpu_settings
+        .features
+        .set(WgpuFeatures::VERTEX_WRITABLE_STORAGE, true);
+
     App::new()
         // ==============
         // DEFAULT PLUGINS + WINDOW SETTINGS
         // ==============
         .add_plugins(
             DefaultPlugins
+                .set(RenderPlugin { wgpu_settings })
                 .set(ImagePlugin::default_nearest())
                 .set(WindowPlugin {
                     primary_window: Some(Window {
@@ -53,9 +65,10 @@ fn main() {
         // GAME PLUGINS
         // ==============
         .add_plugins(MenuPlugin)
-        .add_plugins(PlayerPlugin)
+        .add_plugins(FlyingCameraPlugin)
         .add_plugins(PlanetPlugin)
         .add_plugins(GameAssetsPlugin)
+        .add_plugins(GameplayPlugin)
         // ============
         // DIAGNOSTIC DEBUG LOGGING
         // =============
@@ -69,22 +82,4 @@ fn main() {
         .run();
 
     warn!("game exiting");
-}
-
-fn setup_world_scene(mut commands: Commands) {
-    commands.spawn((
-        DirectionalLightBundle {
-            directional_light: DirectionalLight {
-                color: Color::rgb(0.95, 0.9, 0.99),
-                illuminance: 8906.0,
-                shadows_enabled: true,
-                ..Default::default()
-            },
-            transform: Transform::from_rotation(
-                Quat::from_rotation_x(1.) * Quat::from_rotation_y(3.) * Quat::from_rotation_z(0.5),
-            ),
-            ..default()
-        },
-        Name::new("THE SUN"),
-    ));
 }

@@ -1,7 +1,7 @@
 // use std::collections::{vec_deque, VecDeque};
 use bevy::prelude::*;
 
-use super::height::PLANET_RADIUS;
+use super::terrain::PLANET_RADIUS;
 use crate::triangle::Triangle;
 
 pub trait Piramidesc {
@@ -23,10 +23,13 @@ impl<const N: usize> Piramidesc for Piramidă<N> {
 }
 
 impl Piramidă<1> {
+    // Flat Earth Confirmed
     pub fn new() -> Self {
-        let v1 = Vec3::new(0., 0., 1.);
-        let v2 = Vec3::new(-1., 0., -1.);
-        let v3 = Vec3::new(1., 0., -1.);
+        // https://www.wolframalpha.com/input?i=equilateral+triangle
+        let a = 1.0;
+        let v1 = Vec3::new(0., 0., a / 3.0_f32.sqrt());
+        let v2 = Vec3::new(-a / 2.0, 0., -a / (2. * 3.0_f32.sqrt()));
+        let v3 = Vec3::new(a / 2.0, 0., -a / (2. * 3.0_f32.sqrt()));
         Self {
             children: [Triangle::new(
                 [v1 * PLANET_RADIUS, v2 * PLANET_RADIUS, v3 * PLANET_RADIUS],

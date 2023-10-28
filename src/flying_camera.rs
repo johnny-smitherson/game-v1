@@ -4,24 +4,85 @@ use bevy::prelude::*;
 use bevy_atmosphere::prelude::*;
 use bevy_inspector_egui::prelude::InspectorOptions;
 use core::f32::consts::PI;
+use smart_default::SmartDefault;
+
+use bevy::core_pipeline::bloom::BloomSettings;
+use bevy::core_pipeline::tonemapping::Tonemapping;
+use bevy::window::{CursorGrabMode, PrimaryWindow};
+
+use bevy::{
+    core_pipeline::experimental::taa::{TemporalAntiAliasBundle, TemporalAntiAliasPlugin},
+    pbr::ScreenSpaceAmbientOcclusionBundle,
+};
+
+use crate::planet::TerrainSplitProbe;
+
+pub struct FlyingCameraPlugin;
+impl Plugin for FlyingCameraPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(TemporalAntiAliasPlugin)
+            .init_resource::<FlyingCameraInputState>()
+            .register_type::<FlyingCameraInputState>()
+            .init_resource::<FlyingCameraMovementSettings>()
+            .register_type::<FlyingCameraMovementSettings>()
+            .add_plugins(AtmospherePlugin)
+            .insert_resource(AtmosphereModel::default())
+            .insert_resource(SunSettings::default())
+            .register_type::<SunSettings>()
+            .insert_resource(SunCycleTimer(Timer::new(
+                bevy::utils::Duration::from_millis(500),
+                TimerMode::Repeating,
+            )))
+            .add_systems(PreStartup, (setup_flying_camera, setup_sun))
+            .add_systems(Update, (cursor_grab, daylight_cycle));
+    }
+}
+
+#[derive(Bundle, Default)]
+pub struct FlyingCameraBundle {
+    pub spatial: SpatialBundle,
+    pub camera_pivot: FlyingCameraPivot,
+}
+
+#[derive(Component)]
+pub struct FlyingCameraPivot {
+    pub camera_height: f32,
+}
+
+impl Default for FlyingCameraPivot {
+    fn default() -> Self {
+        Self {
+            camera_height: 10.0,
+        }
+    }
+}
 
 /// A marker component used in queries when you want flycams and not other cameras
-#[derive(Component)]
-pub struct FlyCam;
+#[derive(Reflect, Component)]
+pub struct FlyingCamera;
 
-// Marker for updating the position of the light, not needed unless we have multiple lights
-#[derive(Component)]
+#[derive(Reflect, Component)]
 struct Sun;
 
+#[derive(Reflect, Resource, SmartDefault, InspectorOptions)]
+#[reflect(Resource)]
+struct SunSettings {
+    #[inspector(min = 50.0, max = 15000.0)]
+    #[default = 8000.0]
+    illuminance: f32,
+}
+
 // Timer for updating the daylight cycle (updating the atmosphere every frame is slow, so it's better to do incremental changes)
-#[derive(Resource)]
-struct CycleTimer(Timer);
+#[derive(Reflect, Resource, Default, InspectorOptions)]
+#[reflect(Resource)]
+struct SunCycleTimer(Timer);
 
 fn daylight_cycle(
     mut atmosphere: AtmosphereMut<Nishita>,
     mut query: Query<(&mut Transform, &mut DirectionalLight), With<Sun>>,
-    mut timer: ResMut<CycleTimer>,
+    mut timer: ResMut<SunCycleTimer>,
     time: Res<Time>,
+    sun_settings: Res<SunSettings>,
 ) {
     timer.0.tick(time.delta());
 
@@ -33,74 +94,28 @@ fn daylight_cycle(
 
         for (mut light_trans, mut directional) in query.iter_mut() {
             light_trans.rotation = Quat::from_rotation_x(-t);
-            directional.illuminance = t.sin().max(0.0).powf(2.0) * 8000.0;
+            directional.illuminance = t.sin().max(0.0).powf(2.0) * sun_settings.illuminance;
         }
     }
 }
 
-fn setup_sun(mut commands: Commands) {
+fn setup_sun(mut commands: Commands, sun_settings: Res<SunSettings>) {
     // Our Sun
     commands.spawn((
         DirectionalLightBundle {
             transform: Transform::from_rotation(Quat::from_rotation_x(-PI / 2.0)),
             directional_light: DirectionalLight {
-                illuminance: 8000.0,
+                illuminance: sun_settings.illuminance,
                 ..default()
             },
             ..Default::default()
         },
         Sun,
+        Name::new("THE SUN"),
     ));
 }
 
-pub struct PlayerPlugin;
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<InputState>()
-            .register_type::<InputState>()
-            .init_resource::<MovementSettings>()
-            .register_type::<MovementSettings>()
-            .add_plugins(AtmospherePlugin)
-            .insert_resource(AtmosphereModel::default())
-            .insert_resource(CycleTimer(Timer::new(
-                bevy::utils::Duration::from_millis(500),
-                TimerMode::Repeating,
-            )))
-            .add_systems(PreStartup, (setup_player, setup_sun))
-            .add_systems(Update, (cursor_grab, daylight_cycle));
-    }
-}
-
-// use bevy_flycam::FlyCam;
-// use bevy_flycam::NoGrabNoPlayerPlugin;
-
-/// Marker Component for the Entity that is our Player
-#[derive(Bundle, Default)]
-pub struct PlayerBundle {
-    pub spatial: SpatialBundle,
-    pub player_comp: PlayerComponent,
-}
-
-#[derive(Component)]
-pub struct PlayerComponent {
-    pub camera_height: f32,
-}
-
-impl Default for PlayerComponent {
-    fn default() -> Self {
-        Self {
-            camera_height: 10.0,
-        }
-    }
-}
-
-use bevy::core_pipeline::bloom::BloomSettings;
-use bevy::core_pipeline::tonemapping::Tonemapping;
-use bevy::window::{CursorGrabMode, PrimaryWindow};
-
-fn setup_player(mut commands: Commands) {
-    warn!("PLAYER SETUP SYSTEM...");
-
+fn setup_flying_camera(mut commands: Commands) {
     let camera = commands
         .spawn((
             Camera3dBundle {
@@ -117,7 +132,7 @@ fn setup_player(mut commands: Commands) {
                 tonemapping: Tonemapping::BlenderFilmic,
                 ..Default::default()
             },
-            FlyCam,
+            FlyingCamera,
             AtmosphereCamera::default(),
             BloomSettings {
                 ..default() // intensity: 0.02,
@@ -128,13 +143,18 @@ fn setup_player(mut commands: Commands) {
             // PickingCameraBundle::default();
             Name::new("THE CAMERA"),
         ))
+        .insert(ScreenSpaceAmbientOcclusionBundle::default())
+        .insert(TemporalAntiAliasBundle::default())
         .id();
 
     let player = commands
-        .spawn((PlayerBundle { ..default() }, Name::new("THE PLAYER")))
+        .spawn((
+            FlyingCameraBundle { ..default() },
+            TerrainSplitProbe,
+            Name::new("THE FLYING CAMERA"),
+        ))
         .id();
     commands.entity(camera).set_parent(player);
-    info!("camera: {:?} player: {:?}", camera, player);
 }
 
 fn cursor_grab(
@@ -168,7 +188,7 @@ fn toggle_grab_cursor(window: &mut Window) {
 #[derive(Reflect, Resource, Default, InspectorOptions)]
 #[reflect(Resource)]
 #[reflect(from_reflect = false)]
-pub struct InputState {
+pub struct FlyingCameraInputState {
     pub pitch: f32,
     pub yaw: f32,
     #[reflect(ignore)]
@@ -179,13 +199,12 @@ pub struct InputState {
 
 #[derive(Reflect, Resource, InspectorOptions)]
 #[reflect(Resource)]
-
-pub struct MovementSettings {
+pub struct FlyingCameraMovementSettings {
     pub sensitivity: f32,
     pub speed: f32,
 }
 
-impl Default for MovementSettings {
+impl Default for FlyingCameraMovementSettings {
     fn default() -> Self {
         Self {
             sensitivity: 0.00012,

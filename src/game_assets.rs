@@ -79,11 +79,11 @@ fn setup_bullet_assets(
         BULLET_SIZE / 2.0_f32,
     );
 
-    bullet_assets.flying_effect = effects.add(get_flying_effect());
+    bullet_assets.flying_effect = effects.add(get_portal_effect());
     bullet_assets.hit_effect = effects.add(get_firework_effect());
 }
 
-fn get_flying_effect() -> EffectAsset {
+fn get_tutorial_effect() -> EffectAsset {
     // Define a color gradient from red to transparent black
     let mut gradient = Gradient::new();
     gradient.add_key(0.0, Vec4::new(1., 0., 0., 1.));
@@ -204,4 +204,63 @@ fn get_firework_effect() -> EffectAsset {
     });
 
     effect
+}
+
+fn get_portal_effect() -> EffectAsset {
+    let mut color_gradient1 = Gradient::new();
+    color_gradient1.add_key(0.0, Vec4::new(4.0, 4.0, 4.0, 1.0));
+    color_gradient1.add_key(0.1, Vec4::new(4.0, 4.0, 0.0, 1.0));
+    color_gradient1.add_key(0.9, Vec4::new(4.0, 0.0, 0.0, 1.0));
+    color_gradient1.add_key(1.0, Vec4::new(4.0, 0.0, 0.0, 0.0));
+
+    let mut size_gradient1 = Gradient::new();
+    size_gradient1.add_key(0.0, Vec2::splat(0.0));
+    size_gradient1.add_key(0.2, Vec2::splat(1.5));
+    size_gradient1.add_key(0.8, Vec2::splat(0.7));
+    size_gradient1.add_key(1.0, Vec2::splat(0.0));
+
+    let writer = ExprWriter::new();
+
+    let ax_x = writer.lit(-1.0).uniform(writer.lit(1.0));
+    let ax_y = writer.lit(-1.0).uniform(writer.lit(1.0));
+    let ax_z = writer.lit(-1.0).uniform(writer.lit(1.0));
+    let ax = writer.lit(Vec3::X) * ax_x + writer.lit(Vec3::Y) * ax_y + writer.lit(Vec3::Z) * ax_z;
+
+    let init_pos = SetPositionCircleModifier {
+        center: writer.lit(Vec3::ZERO).expr(),
+        axis: ax.expr(),
+        radius: writer.lit(0.4).expr(),
+        dimension: ShapeDimension::Volume,
+    };
+
+    let age = writer.lit(0.).expr();
+    let init_age = SetAttributeModifier::new(Attribute::AGE, age);
+
+    // Give a bit of variation by randomizing the lifetime per particle
+    let lifetime = writer.lit(0.6).uniform(writer.lit(2.3)).expr();
+    let init_lifetime = SetAttributeModifier::new(Attribute::LIFETIME, lifetime);
+
+    // Add drag to make particles slow down a bit after the initial acceleration
+    let drag = writer.lit(3.).expr();
+    let update_drag = LinearDragModifier::new(drag);
+
+    let mut module = writer.finish();
+
+    let tangent_accel = TangentAccelModifier::constant(&mut module, Vec3::ZERO, Vec3::Y, -13.);
+
+    EffectAsset::new(32768, Spawner::rate(5000.0.into()), module)
+        .with_name("portal")
+        .init(init_pos)
+        .init(init_age)
+        .init(init_lifetime)
+        .update(update_drag)
+        .update(tangent_accel)
+        .render(ColorOverLifetimeModifier {
+            gradient: color_gradient1,
+        })
+        .render(SizeOverLifetimeModifier {
+            gradient: size_gradient1,
+            screen_space_size: false,
+        })
+        .render(BillboardModifier {})
 }

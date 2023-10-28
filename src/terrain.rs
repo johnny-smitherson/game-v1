@@ -24,14 +24,14 @@ pub struct TerrainSettings {
 impl Default for TerrainSettings {
     fn default() -> Self {
         Self {
-            MAX_SPLIT_LEVEL: 13,
+            MAX_SPLIT_LEVEL: 20,
             MIN_SPLIT_LEVEL: 2,
-            TESSELATION_VALUE: 5.0,
+            TESSELATION_VALUE: 4.0,
             MIN_CAMERA_HEIGHT: 0.3,
             MAX_CAMERA_HEIGHT: 250.,
             // defines how lazy the split/merge operation is
-            SPLIT_LAZY_COEF: 0.3,
-            MIN_TRIANGLE_EDGE_SIZE: 1.0,
+            SPLIT_LAZY_COEF: 0.2,
+            MIN_TRIANGLE_EDGE_SIZE: 5.2,
         }
     }
 }
