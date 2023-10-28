@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-use crate::flying_camera::FlyingCameraPivot;
 use crate::game_assets::BulletAssets;
 use crate::menu::UiMenuState;
 use crate::planet::TerrainSplitProbe;
@@ -53,7 +52,6 @@ fn shoot_bullet(
 
     const SHOOT_IMPULSE_SCALE: f32 = 0.3;
     const SHOOT_ROTATION: f32 = 5.0;
-    const SHOOT_EXTRA_FORWARD: f32 = 1.5;
 
     let fwd = tank.fire_direction;
     let quat = Quat::from_rotation_arc(Vec3::Z, fwd);

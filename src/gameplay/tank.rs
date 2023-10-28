@@ -236,10 +236,10 @@ fn read_tank_gravity_result(
 
 fn tank_fix_above_terrain(mut transforms: Query<&mut Transform, With<TankGravity>>) {
     for mut transform in transforms.iter_mut() {
-        const reset_below: f32 = 2.0;
+        const RESET_BELOW: f32 = 2.0;
         let terrain_height = height(&Vec3::ZERO);
-        if transform.translation.y < terrain_height - reset_below {
-            transform.translation.y = terrain_height + reset_below * 3.;
+        if transform.translation.y < terrain_height - RESET_BELOW {
+            transform.translation.y = terrain_height + RESET_BELOW * 3.;
         }
     }
 }
