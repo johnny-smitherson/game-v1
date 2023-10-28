@@ -105,9 +105,9 @@ fn setup_planet(
         ..default()
     });
 
-    let piramidă = Box::new(Piramidă::<1>::new());
+    let mut piramidă = Box::new(Piramidă::<1>::new());
 
-    let tris = piramidă.as_ref().base_tris();
+    let tris = piramidă.as_mut().base_tris();
     let planet_ent = commands
         .spawn((
             PlanetComponent,

@@ -5,7 +5,7 @@ use super::terrain::PLANET_RADIUS;
 use crate::triangle::Triangle;
 
 pub trait Piramidesc {
-    fn base_tris(&self) -> Vec<Triangle>;
+    fn base_tris(&mut self) -> Vec<Triangle>;
 }
 
 /// AM PIRAMIDĂ
@@ -15,9 +15,11 @@ pub struct Piramidă<const N: usize> {
 }
 
 impl<const N: usize> Piramidesc for Piramidă<N> {
-    fn base_tris(&self) -> Vec<Triangle> {
+    fn base_tris(&mut self) -> Vec<Triangle> {
         let mut vec = Vec::<Triangle>::new();
-        vec.extend(self.children.iter().cloned());
+        for mut child in self.children.iter_mut() {
+            vec.extend(child.base_tris());
+        }
         vec
     }
 }

@@ -7,7 +7,7 @@ use bevy::render::mesh::{Indices, PrimitiveTopology};
 // use rayon::prelude::IntoParallelRefMutIterator;
 
 use super::terrain::apply_height;
-use crate::terrain::TerrainSettings;
+use crate::terrain::{TerrainSettings, BASE_SPLIT_LEVEL};
 use bevy_rapier3d::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
@@ -57,7 +57,7 @@ impl TriangleData {
 }
 
 /// Triangle made of 3 vec3 corners
-#[derive(Debug, Clone, Component)]
+#[derive(Component, Debug, Clone)]
 pub struct Triangle {
     data: TriangleData,
     all_data: Vec<TriangleData>,
@@ -133,7 +133,28 @@ impl Triangle {
         )
     }
 
+    pub fn base_tris(&mut self) -> Vec<Triangle> {
+        if self.level == BASE_SPLIT_LEVEL {
+            return vec![self.clone()];
+        }
+        assert!(self.level < BASE_SPLIT_LEVEL);
+        self.split();
+
+        let mut vec = Vec::<Triangle>::new();
+        for child in self
+            .children
+            .as_mut()
+            .expect("no children after split?!")
+            .iter_mut()
+        {
+            vec.extend(child.base_tris());
+        }
+        vec
+    }
+
     pub fn generate_mesh(&self, _settings: &TerrainSettings) -> (Mesh, Collider) {
+        assert!(self.level == BASE_SPLIT_LEVEL);
+
         let mut all_verts = Vec::<Vec3>::new();
         let mut all_norms = Vec::<Vec3>::new();
         let mut all_uvs = Vec::<Vec2>::new();
@@ -212,7 +233,7 @@ impl Triangle {
             }
         }
         // pull data from children
-        if dirty {
+        if dirty && self.level >= BASE_SPLIT_LEVEL {
             self.all_data = Vec::<TriangleData>::new();
             if self.is_split() {
                 for child in self.children.as_ref().expect("wtf").iter() {
@@ -238,7 +259,7 @@ impl Triangle {
     }
 
     fn should_split(&self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
-        if self.level < settings.MIN_SPLIT_LEVEL {
+        if self.level < settings.MIN_SPLIT_LEVEL || self.level < BASE_SPLIT_LEVEL {
             return true;
         }
         if self.level >= settings.MAX_SPLIT_LEVEL
@@ -252,6 +273,10 @@ impl Triangle {
         }
     }
     fn should_merge(&self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
+        if self.level <= settings.MIN_SPLIT_LEVEL || self.level <= BASE_SPLIT_LEVEL {
+            return false;
+        }
+
         if self.level > settings.MAX_SPLIT_LEVEL {
             true
         } else {
@@ -261,6 +286,9 @@ impl Triangle {
     }
 
     fn get_distance_over_size(&self, all_pos: &Vec<Vec3>) -> f32 {
+        if all_pos.is_empty() {
+            return 666666.0_f32;
+        }
         all_pos
             .iter()
             .map(|pos| (*pos - self.data.center).length())
