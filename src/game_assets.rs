@@ -83,6 +83,7 @@ fn setup_bullet_assets(
     bullet_assets.hit_effect = effects.add(get_firework_effect());
 }
 
+#[allow(dead_code)]
 fn get_tutorial_effect() -> EffectAsset {
     // Define a color gradient from red to transparent black
     let mut gradient = Gradient::new();

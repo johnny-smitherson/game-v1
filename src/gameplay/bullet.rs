@@ -1,11 +1,10 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
-use crate::flying_camera::{FlyingCamera, FlyingCameraPivot};
-use crate::game_assets::{BulletAssets, GameSceneAssets};
+use crate::flying_camera::FlyingCameraPivot;
+use crate::game_assets::BulletAssets;
 use crate::menu::UiMenuState;
 use crate::planet::TerrainSplitProbe;
-use crate::terrain::{height, PLANET_RADIUS};
 
 use super::tank::{PlayerControlledTank, Tank};
 
@@ -39,7 +38,6 @@ fn on_bullet_impact(mut commands: Commands, hits: Query<(Entity, &mut Bullet, &m
 fn shoot_bullet(
     mut commands: Commands,
     ui_state: Res<UiMenuState>,
-    player_query: Query<&mut Transform, With<FlyingCameraPivot>>,
     player_tank: Query<&Tank, With<PlayerControlledTank>>,
     bullet_assets: Res<BulletAssets>,
     // scene_assets: ResMut<GameSceneAssets>,
@@ -53,7 +51,7 @@ fn shoot_bullet(
     }
     let tank = player_tank.get_single().expect("no player tank wtf.");
 
-    const SHOOT_IMPULSE: f32 = 300.0;
+    const SHOOT_IMPULSE_SCALE: f32 = 0.3;
     const SHOOT_ROTATION: f32 = 5.0;
     const SHOOT_EXTRA_FORWARD: f32 = 1.5;
 
@@ -91,7 +89,7 @@ fn shoot_bullet(
             angular_damping: 0.05,
         })
         .insert(ExternalImpulse {
-            impulse: fwd * SHOOT_IMPULSE,
+            impulse: fwd * tank.power * SHOOT_IMPULSE_SCALE,
             torque_impulse: quat * Vec3::new(0.0, 0.0, SHOOT_ROTATION),
         })
         .insert(ActiveEvents::COLLISION_EVENTS)

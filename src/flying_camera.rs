@@ -17,6 +17,13 @@ use bevy::{
 
 use crate::planet::TerrainSplitProbe;
 
+// use std::collections::{vec_deque, VecDeque};
+use super::menu::UiMenuState;
+use super::terrain::{height, PLANET_RADIUS};
+
+// use bevy::ecs::event::Events;
+use bevy::input::mouse::MouseWheel;
+
 pub struct FlyingCameraPlugin;
 impl Plugin for FlyingCameraPlugin {
     fn build(&self, app: &mut App) {
@@ -34,7 +41,7 @@ impl Plugin for FlyingCameraPlugin {
                 TimerMode::Repeating,
             )))
             .add_systems(PreStartup, (setup_flying_camera, setup_sun))
-            .add_systems(Update, (cursor_grab, daylight_cycle));
+            .add_systems(Update, (cursor_grab, daylight_cycle, rotate_player).chain());
     }
 }
 
@@ -87,7 +94,7 @@ fn daylight_cycle(
     timer.0.tick(time.delta());
 
     if timer.0.finished() {
-        let time = time.elapsed_seconds_wrapped() / 200.0;
+        let time = 1.0 + time.elapsed_seconds_wrapped() / 200.0;
         let t = PI / 2.0 + time.sin() * 0.35;
 
         atmosphere.sun_position = Vec3::new(0., t.sin(), t.cos());
@@ -134,6 +141,16 @@ fn setup_flying_camera(mut commands: Commands) {
             },
             FlyingCamera,
             AtmosphereCamera::default(),
+            FogSettings {
+                color: Color::rgba(0.1, 0.2, 0.4, 1.0),
+                directional_light_color: Color::rgba(1.0, 0.95, 0.75, 0.5),
+                directional_light_exponent: 30.0,
+                falloff: FogFalloff::from_visibility_colors(
+                    25000.0, // distance in world units up to which objects retain visibility (>= 5% contrast)
+                    Color::rgb(0.35, 0.5, 0.66), // atmospheric extinction color (after light is lost due to absorption by atmospheric particles)
+                    Color::rgb(0.8, 0.844, 1.0), // atmospheric inscattering color (light gained due to scattering from the sun)
+                ),
+            },
             BloomSettings {
                 ..default() // intensity: 0.02,
                             // scale: 0.5,
@@ -211,4 +228,124 @@ impl Default for FlyingCameraMovementSettings {
             speed: 4.02,
         }
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::type_complexity)]
+fn rotate_player(
+    mut query_player: Query<(&mut Transform, &mut FlyingCameraPivot), With<FlyingCameraPivot>>,
+    mut query_camera: Query<&mut Transform, (With<FlyingCamera>, Without<FlyingCameraPivot>)>,
+
+    time: Res<Time>,
+    mut mouse_input_state: ResMut<FlyingCameraInputState>,
+    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
+    mouse_motion_events: Res<Events<MouseMotion>>,
+    mut scroll_evr: EventReader<MouseWheel>,
+    keys: Res<Input<KeyCode>>,
+    settings: Res<FlyingCameraMovementSettings>,
+    mut ui_state: ResMut<UiMenuState>,
+) {
+    // mouse movements
+    let delta_state = mouse_input_state.as_mut();
+    let mut mouse_delta_pitch = delta_state.pitch;
+    let mut mouse_delta_yaw = 0.0;
+
+    let window = primary_window.get_single_mut().expect("no window wtf");
+    ui_state.is_mouse_captured = window.cursor.grab_mode != CursorGrabMode::None;
+    // capture mouse motion events
+    for ev in delta_state.reader_motion.iter(&mouse_motion_events) {
+        if ui_state.is_mouse_captured {
+            // Using smallest of height or width ensures equal vertical and horizontal sensitivity
+            let window_scale = window.height().min(window.width());
+            mouse_delta_pitch -= (settings.sensitivity * ev.delta.y * window_scale).to_radians();
+            mouse_delta_pitch = mouse_delta_pitch.clamp(-1.54, 1.54);
+            delta_state.pitch = mouse_delta_pitch;
+            mouse_delta_yaw -= (settings.sensitivity * ev.delta.x * window_scale).to_radians();
+        }
+    }
+
+    let (mut player_tr, mut player_comp) = query_player.get_single_mut().expect("no player");
+    let mut camera_tr = query_camera.get_single_mut().expect("no camera");
+
+    // capture movement events: wasd/scroll wheel
+    {
+        let mut velocity = Vec3::ZERO;
+        let _up = Vec3::Y;
+        let _right = player_tr.right().normalize();
+        let _forward = _up.cross(_right).normalize();
+
+        for key in keys.get_pressed() {
+            if ui_state.is_mouse_captured {
+                match key {
+                    KeyCode::W => velocity += _forward,
+                    KeyCode::S => velocity -= _forward,
+                    KeyCode::A => velocity -= _right,
+                    KeyCode::D => velocity += _right,
+                    _ => (),
+                }
+            }
+        }
+
+        if !ui_state.is_mouse_captured && ui_state.enable_animation {
+            // println!("{}", time.elapsed_seconds());
+            velocity += _forward * 1.0; //(time.elapsed_seconds() / 3.0 + 1.0).sin();
+            velocity += _right * (time.elapsed_seconds() / 4.0 + 2.0).cos();
+            velocity += _up * (time.elapsed_seconds() / 5.0 + 3.0).sin();
+            mouse_delta_yaw += (time.elapsed_seconds() / 8.0 + 2.0).sin() / 100.0;
+
+            // copmute camera height anim with exp
+            let camera_min_exp = ui_state.settings.MIN_CAMERA_HEIGHT.log2();
+            let camera_max_exp = ui_state.settings.MAX_CAMERA_HEIGHT.log2();
+            let camera_osc = ((time.elapsed_seconds() / 6.0).cos() + 1.) / 2.0;
+            let current_camera_exp =
+                camera_min_exp + (camera_max_exp - camera_min_exp) * camera_osc;
+            let new_camera_height = 2.0_f32.powf(current_camera_exp);
+            player_comp.camera_height = new_camera_height;
+
+            delta_state.pitch = -1.5 * current_camera_exp / camera_max_exp;
+        }
+
+        {
+            use bevy::input::mouse::MouseScrollUnit;
+            for ev in scroll_evr.iter() {
+                if ui_state.is_mouse_captured {
+                    match ev.unit {
+                        MouseScrollUnit::Line => {
+                            player_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
+                        }
+                        MouseScrollUnit::Pixel => {
+                            player_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
+                        }
+                    }
+                }
+            }
+            player_comp.camera_height = player_comp.camera_height.clamp(
+                ui_state.settings.MIN_CAMERA_HEIGHT,
+                ui_state.settings.MAX_CAMERA_HEIGHT,
+            );
+        }
+
+        velocity = velocity.normalize_or_zero();
+
+        player_tr.translation +=
+            velocity * time.delta_seconds() * settings.speed * player_comp.camera_height;
+    }
+
+    camera_tr.rotation = Quat::from_axis_angle(Vec3::X, delta_state.pitch);
+    player_tr.rotate_local_y(mouse_delta_yaw);
+
+    let _up = Vec3::Y;
+    let _right = player_tr.right().normalize();
+    let _forward = _up.cross(_right).normalize();
+
+    player_tr.translation.y = player_comp.camera_height + height(&player_tr.translation);
+    let mut _pos_xz = Vec3::new(player_tr.translation.x, 0.0, player_tr.translation.z);
+    let max_camera_xz = PLANET_RADIUS / 5.0;
+    if _pos_xz.length() > max_camera_xz {
+        _pos_xz = _pos_xz.normalize() * max_camera_xz;
+        player_tr.translation.x = _pos_xz.x;
+        player_tr.translation.z = _pos_xz.z;
+    }
+    let _target = player_tr.translation + _forward;
+    player_tr.look_at(_target, _up);
 }

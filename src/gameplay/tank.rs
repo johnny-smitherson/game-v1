@@ -10,10 +10,15 @@ use core::f32::consts::PI;
 
 use smart_default::SmartDefault;
 
+const GRAVITY: f32 = 9.8_f32;
+
 pub struct TankPlugin;
 impl Plugin for TankPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<TankGravity>()
+            .register_type::<Tank>()
+            .register_type::<PlayerControlledTank>()
+            .register_type::<AiControlledTank>()
             .add_systems(Startup, tank_setup)
             .add_systems(
                 Update,
@@ -26,6 +31,28 @@ impl Plugin for TankPlugin {
 
 #[derive(Reflect, Component, Default)]
 pub struct PlayerControlledTank;
+
+#[derive(Reflect, Component, Default)]
+pub struct AiControlledTank;
+
+#[derive(Reflect, Component, SmartDefault)]
+pub struct Tank {
+    #[default(PI/4.0)]
+    elevation: f32,
+    #[default(0.0)]
+    bearing: f32,
+    #[default(1000.0)]
+    pub power: f32,
+
+    pub fire_direction: Vec3,
+    pub fire_origin: Vec3,
+}
+
+#[derive(Reflect, Component, Default)]
+pub struct TankGravity {
+    is_grounded: bool,
+    fall_time: f32,
+}
 
 fn control_player_tank_mvmt(
     mut tank: Query<
@@ -40,30 +67,38 @@ fn control_player_tank_mvmt(
     let mut _delta_bearing: f32 = 0.0;
     let mut _delta_adv: f32 = 0.0;
     let mut _delta_elev: f32 = 0.0;
+    let mut _delta_power: f32 = 0.0;
 
-    const elevation_speed: f32 = 0.5;
-    const bearing_speed: f32 = 0.9;
-    const tank_mvmt_speed: f32 = 8.5;
+    const ELEVATION_SPEED: f32 = 0.7;
+    const BEARING_SPEED: f32 = 1.3;
+    const TANK_MVMT_SPEED: f32 = 8.5;
+    const POWER_CHANGE_SPEED: f32 = 15.5;
 
     for key in keys.get_pressed() {
         match key {
             KeyCode::ShiftRight => {
-                _delta_elev += elevation_speed * time.delta_seconds();
+                _delta_elev += ELEVATION_SPEED * time.delta_seconds();
             }
             KeyCode::ControlRight => {
-                _delta_elev -= elevation_speed * time.delta_seconds();
+                _delta_elev -= ELEVATION_SPEED * time.delta_seconds();
             }
             KeyCode::Up => {
-                _delta_adv += tank_mvmt_speed * time.delta_seconds();
+                _delta_adv += TANK_MVMT_SPEED * time.delta_seconds();
             }
             KeyCode::Down => {
-                _delta_adv -= tank_mvmt_speed * time.delta_seconds();
+                _delta_adv -= TANK_MVMT_SPEED * time.delta_seconds();
             }
             KeyCode::Left => {
-                _delta_bearing += bearing_speed * time.delta_seconds();
+                _delta_bearing += BEARING_SPEED * time.delta_seconds();
             }
             KeyCode::Right => {
-                _delta_bearing -= bearing_speed * time.delta_seconds();
+                _delta_bearing -= BEARING_SPEED * time.delta_seconds();
+            }
+            KeyCode::Plus => {
+                _delta_power += POWER_CHANGE_SPEED * time.delta_seconds();
+            }
+            KeyCode::Minus => {
+                _delta_power -= POWER_CHANGE_SPEED * time.delta_seconds();
             }
             _ => (),
         }
@@ -74,6 +109,9 @@ fn control_player_tank_mvmt(
 
     tank_data.elevation += _delta_elev;
     tank_data.elevation = tank_data.elevation.clamp(0.0, PI / 2.0);
+
+    tank_data.power += _delta_power;
+    tank_data.power = tank_data.power.clamp(0.0, 1000.0);
     let elevation = tank_data.elevation;
 
     tank_controller.translation = Some(-tank_transform.right() * _delta_adv);
@@ -95,35 +133,21 @@ fn control_player_tank_mvmt(
     gizmo_config.line_width = 3.0;
 }
 
-#[derive(Reflect, Component, SmartDefault)]
-pub struct Tank {
-    #[default(PI/4.0)]
-    elevation: f32,
-    #[default(0.0)]
-    bearing: f32,
-
-    pub fire_direction: Vec3,
-    pub fire_origin: Vec3,
+fn rand_float(max_abs: f32) -> f32 {
+    max_abs * (rand::random::<f32>() * 2.0 - 1.0)
 }
 
-#[derive(Reflect, Component, Default)]
-pub struct TankGravity {
-    is_grounded: bool,
-    fall_time: f32,
+fn rand_vec3(max_abs: f32) -> Vec3 {
+    Vec3::new(
+        rand_float(max_abs),
+        rand_float(max_abs),
+        rand_float(max_abs),
+    )
 }
 
 fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
     let collider_size: f32 = 0.5;
-    let tank_collider = Collider::cuboid(collider_size, collider_size / 5.0, collider_size);
-
-    let tank_model = SceneBundle {
-        scene: scene_assets
-            .scenes
-            .get("ORIGINAL/Tanks and Armored Vehicle.glb")
-            .expect("KEY NOT FOUND")
-            .clone(),
-        ..Default::default()
-    };
+    let tank_collider = Collider::cuboid(collider_size, collider_size / 2.0, collider_size);
 
     let tank_controller = KinematicCharacterController {
         // The character offset is set to 0.01.
@@ -137,28 +161,54 @@ fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
         ..default()
     };
 
-    let tank_spawn_pos = apply_height(&Vec3::ZERO) + Vec3::Y * (collider_size + 10.0);
+    let tank_model_scene = scene_assets
+        .scenes
+        .get("ORIGINAL/Tanks and Armored Vehicle.glb")
+        .expect("KEY NOT FOUND");
 
-    let tank_id = commands
-        .spawn((Tank::default(), SpatialBundle::default()))
-        .insert(Transform::from_translation(tank_spawn_pos))
-        .insert(TankGravity::default())
-        .insert((
-            RigidBody::KinematicPositionBased,
-            tank_controller,
-            tank_collider, // tank_model,
-        ))
-        .insert(PlayerControlledTank)
-        .insert(Name::new("Player Tank"))
-        .insert(TerrainSplitProbe)
-        .id();
-    commands
-        .spawn((tank_model, Name::new("Tank Model")))
-        .insert(Transform::from_translation(Vec3::Y * -0.5_f32).with_scale(Vec3::ONE * 0.5_f32))
-        .set_parent(tank_id); //.insert(Transform::from_scale(Vec3::ONE * 0.25));
+    const TANK_COUNT: i32 = 12;
+    const TANK_SPREAD: f32 = 2000.0;
+
+    for i in 0..TANK_COUNT {
+        let tank_spawn_pos = rand_vec3(TANK_SPREAD);
+        let tank_spawn_pos = apply_height(&tank_spawn_pos) + Vec3::Y * (collider_size + 5.0);
+
+        let tank_model = SceneBundle {
+            scene: tank_model_scene.clone(),
+            ..Default::default()
+        };
+
+        let tank_id = commands
+            .spawn((Tank::default(), SpatialBundle::default()))
+            .insert(Transform::from_translation(tank_spawn_pos))
+            .insert(TankGravity::default())
+            .insert((
+                RigidBody::KinematicPositionBased,
+                tank_controller.clone(),
+                tank_collider.clone(), // tank_model,
+            ))
+            .insert(TerrainSplitProbe)
+            .id();
+        commands
+            .spawn((tank_model, Name::new("Tank Model")))
+            .insert(
+                Transform::from_translation(Vec3::Y * -0.25_f32).with_scale(Vec3::ONE * 0.125_f32),
+            )
+            .set_parent(tank_id); //.insert(Transform::from_scale(Vec3::ONE * 0.25));
+
+        if i == 0 {
+            commands
+                .entity(tank_id)
+                .insert(PlayerControlledTank)
+                .insert(Name::new("Player Tank"));
+        } else {
+            commands
+                .entity(tank_id)
+                .insert(AiControlledTank)
+                .insert(Name::new("AI Tank"));
+        }
+    }
 }
-
-const GRAVITY: f32 = 9.8_f32;
 
 fn tank_gravity_update(
     mut tanks: Query<(&mut KinematicCharacterController, &mut TankGravity), With<TankGravity>>,

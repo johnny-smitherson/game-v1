@@ -1,7 +1,8 @@
 # TODO - gameplay feat
 
-- [ ] tank controlller
-- [ ] tank shooting
+- [x] tank controlller
+- [x] tank shooting
+- [ ] bunch of tanks
 - [ ] bullet kills tanks
 - [ ] AI contorolled tank
 

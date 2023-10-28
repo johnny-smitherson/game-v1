@@ -1,15 +1,8 @@
 // use std::collections::{vec_deque, VecDeque};
 use super::menu::UiMenuState;
-use super::terrain::{height, PLANET_RADIUS};
 use crate::piramida::Piramidesc;
 use crate::piramida::Piramidă;
 use crate::triangle::Triangle;
-
-// use bevy::ecs::event::Events;
-use crate::flying_camera::{FlyingCamera, FlyingCameraInputState, FlyingCameraMovementSettings};
-use bevy::input::mouse::MouseMotion;
-use bevy::input::mouse::MouseWheel;
-use bevy::window::{CursorGrabMode, PrimaryWindow};
 
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
@@ -19,12 +12,16 @@ pub struct PlanetPlugin;
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_planet)
-            .add_systems(Update, (rotate_player, update_triangle_split).chain());
+            .add_systems(PreUpdate, update_triangle_split);
     }
 }
 
 #[derive(Reflect, Component, Default)]
 pub struct TerrainSplitProbe;
+
+/// A marker component for our shapes so we can query them separately from the ground plane
+#[derive(Component)]
+pub struct PlanetComponent;
 
 #[allow(clippy::type_complexity)]
 fn update_triangle_split(
@@ -94,12 +91,6 @@ fn update_triangle_split(
     ui_state.mesh_count = mesh_count as f32;
 }
 
-/// A marker component for our shapes so we can query them separately from the ground plane
-#[derive(Component)]
-pub struct PlanetComponent;
-
-use super::flying_camera::FlyingCameraPivot;
-
 fn setup_planet(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -146,126 +137,6 @@ fn setup_planet(
             .id();
         commands.entity(tri_ent).set_parent(planet_ent);
     }
-}
-
-#[allow(clippy::too_many_arguments)]
-#[allow(clippy::type_complexity)]
-fn rotate_player(
-    mut query_player: Query<(&mut Transform, &mut FlyingCameraPivot), With<FlyingCameraPivot>>,
-    mut query_camera: Query<&mut Transform, (With<FlyingCamera>, Without<FlyingCameraPivot>)>,
-
-    time: Res<Time>,
-    mut mouse_input_state: ResMut<FlyingCameraInputState>,
-    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
-    mouse_motion_events: Res<Events<MouseMotion>>,
-    mut scroll_evr: EventReader<MouseWheel>,
-    keys: Res<Input<KeyCode>>,
-    settings: Res<FlyingCameraMovementSettings>,
-    mut ui_state: ResMut<UiMenuState>,
-) {
-    // mouse movements
-    let delta_state = mouse_input_state.as_mut();
-    let mut mouse_delta_pitch = delta_state.pitch;
-    let mut mouse_delta_yaw = 0.0;
-
-    let window = primary_window.get_single_mut().expect("no window wtf");
-    ui_state.is_mouse_captured = window.cursor.grab_mode != CursorGrabMode::None;
-    // capture mouse motion events
-    for ev in delta_state.reader_motion.iter(&mouse_motion_events) {
-        if ui_state.is_mouse_captured {
-            // Using smallest of height or width ensures equal vertical and horizontal sensitivity
-            let window_scale = window.height().min(window.width());
-            mouse_delta_pitch -= (settings.sensitivity * ev.delta.y * window_scale).to_radians();
-            mouse_delta_pitch = mouse_delta_pitch.clamp(-1.54, 1.54);
-            delta_state.pitch = mouse_delta_pitch;
-            mouse_delta_yaw -= (settings.sensitivity * ev.delta.x * window_scale).to_radians();
-        }
-    }
-
-    let (mut player_tr, mut player_comp) = query_player.get_single_mut().expect("no player");
-    let mut camera_tr = query_camera.get_single_mut().expect("no camera");
-
-    // capture movement events: wasd/scroll wheel
-    {
-        let mut velocity = Vec3::ZERO;
-        let _up = Vec3::Y;
-        let _right = player_tr.right().normalize();
-        let _forward = _up.cross(_right).normalize();
-
-        for key in keys.get_pressed() {
-            if ui_state.is_mouse_captured {
-                match key {
-                    KeyCode::W => velocity += _forward,
-                    KeyCode::S => velocity -= _forward,
-                    KeyCode::A => velocity -= _right,
-                    KeyCode::D => velocity += _right,
-                    _ => (),
-                }
-            }
-        }
-
-        if !ui_state.is_mouse_captured && ui_state.enable_animation {
-            // println!("{}", time.elapsed_seconds());
-            velocity += _forward * 1.0; //(time.elapsed_seconds() / 3.0 + 1.0).sin();
-            velocity += _right * (time.elapsed_seconds() / 4.0 + 2.0).cos();
-            velocity += _up * (time.elapsed_seconds() / 5.0 + 3.0).sin();
-            mouse_delta_yaw += (time.elapsed_seconds() / 8.0 + 2.0).sin() / 100.0;
-
-            // copmute camera height anim with exp
-            let camera_min_exp = ui_state.settings.MIN_CAMERA_HEIGHT.log2();
-            let camera_max_exp = ui_state.settings.MAX_CAMERA_HEIGHT.log2();
-            let camera_osc = ((time.elapsed_seconds() / 6.0).cos() + 1.) / 2.0;
-            let current_camera_exp =
-                camera_min_exp + (camera_max_exp - camera_min_exp) * camera_osc;
-            let new_camera_height = 2.0_f32.powf(current_camera_exp);
-            player_comp.camera_height = new_camera_height;
-
-            delta_state.pitch = -1.5 * current_camera_exp / camera_max_exp;
-        }
-
-        {
-            use bevy::input::mouse::MouseScrollUnit;
-            for ev in scroll_evr.iter() {
-                if ui_state.is_mouse_captured {
-                    match ev.unit {
-                        MouseScrollUnit::Line => {
-                            player_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
-                        }
-                        MouseScrollUnit::Pixel => {
-                            player_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
-                        }
-                    }
-                }
-            }
-            player_comp.camera_height = player_comp.camera_height.clamp(
-                ui_state.settings.MIN_CAMERA_HEIGHT,
-                ui_state.settings.MAX_CAMERA_HEIGHT,
-            );
-        }
-
-        velocity = velocity.normalize_or_zero();
-
-        player_tr.translation +=
-            velocity * time.delta_seconds() * settings.speed * player_comp.camera_height;
-    }
-
-    camera_tr.rotation = Quat::from_axis_angle(Vec3::X, delta_state.pitch);
-    player_tr.rotate_local_y(mouse_delta_yaw);
-
-    let _up = Vec3::Y;
-    let _right = player_tr.right().normalize();
-    let _forward = _up.cross(_right).normalize();
-
-    player_tr.translation.y = player_comp.camera_height + height(&player_tr.translation);
-    let mut _pos_xz = Vec3::new(player_tr.translation.x, 0.0, player_tr.translation.z);
-    let max_camera_xz = PLANET_RADIUS / 5.0;
-    if _pos_xz.length() > max_camera_xz {
-        _pos_xz = _pos_xz.normalize() * max_camera_xz;
-        player_tr.translation.x = _pos_xz.x;
-        player_tr.translation.z = _pos_xz.z;
-    }
-    let _target = player_tr.translation + _forward;
-    player_tr.look_at(_target, _up);
 }
 
 // Creates a colorful test pattern
