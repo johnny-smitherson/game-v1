@@ -2,9 +2,12 @@
 use super::menu::UiMenuState;
 use crate::piramida::Piramidesc;
 use crate::piramida::Piramidă;
+use crate::raycast::TerrainRaycastSet;
 use crate::triangle::Triangle;
 
 use bevy::prelude::*;
+use bevy::render::primitives::Aabb;
+use bevy_mod_raycast::RaycastMesh;
 use bevy_rapier3d::prelude::*;
 use rayon::prelude::IntoParallelRefMutIterator;
 
@@ -27,7 +30,7 @@ pub struct PlanetComponent;
 fn update_triangle_split(
     probe_query: Query<&Transform, With<TerrainSplitProbe>>,
     mut tri_query: Query<
-        (&mut Triangle, &mut Handle<Mesh>, &mut Collider),
+        (&mut Triangle, &mut Handle<Mesh>, &mut Collider, &mut Aabb),
         (
             With<Triangle>,
             With<Handle<Mesh>>,
@@ -60,11 +63,12 @@ fn update_triangle_split(
     use rayon::iter::ParallelIterator;
     let query_results: Vec<Option<_>> = query_args
         .par_iter_mut()
-        .map(|(tri, mesh_handle, collider)| {
+        .map(|(tri, mesh_handle, collider, aabb)| {
             let changed = tri.update_split(&probe_pos, &ui_state.settings);
             if changed {
                 let (mesh, new_collider) = tri.generate_mesh(&ui_state.settings);
                 *collider.as_mut() = new_collider;
+                **aabb = mesh.compute_aabb().expect("tri mesh returned empty aabb");
                 Some((mesh_handle, mesh))
             } else {
                 None
@@ -82,7 +86,7 @@ fn update_triangle_split(
 
     let mut triangle_count = 0;
     let mut mesh_count = 0;
-    for (triangle, _, _) in query_args {
+    for (triangle, _, _, _) in query_args {
         triangle_count += triangle.tri_count();
         mesh_count += 1;
     }
@@ -132,6 +136,7 @@ fn setup_planet(
                 collider,
                 Ccd::enabled(),
                 // PickableBundle::default(),
+                RaycastMesh::<TerrainRaycastSet>::default(),
                 Name::new("some base planet triangle"),
             ))
             .id();

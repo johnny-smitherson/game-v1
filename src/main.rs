@@ -4,6 +4,7 @@ mod gameplay;
 mod menu;
 mod piramida;
 mod planet;
+mod raycast;
 mod terrain;
 mod triangle;
 
@@ -23,6 +24,7 @@ use bevy::{
 };
 
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_mod_raycast::low_latency_window_plugin;
 use bevy_rapier3d::prelude::*;
 use bevy_screen_diagnostics::{ScreenDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin};
 
@@ -38,6 +40,7 @@ fn main() {
         // ==============
         .add_plugins(
             DefaultPlugins
+                .set(low_latency_window_plugin())
                 .set(RenderPlugin { wgpu_settings })
                 .set(ImagePlugin::default_nearest())
                 .set(WindowPlugin {
@@ -69,6 +72,7 @@ fn main() {
         .add_plugins(PlanetPlugin)
         .add_plugins(GameAssetsPlugin)
         .add_plugins(GameplayPlugin)
+        .add_plugins(raycast::RaycastPlugin)
         // ============
         // DIAGNOSTIC DEBUG LOGGING
         // =============

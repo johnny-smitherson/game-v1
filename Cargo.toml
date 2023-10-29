@@ -28,6 +28,7 @@ bevy_hanabi = "0.7"
 bevy_screen_diagnostics = "0.3"
 bevy_atmosphere = "0.7"
 smart-default = "0.7.1"
+bevy_mod_raycast = "0.14.1"
 
 [workspace]
 resolver = "2" # Important! wgpu/Bevy needs this!

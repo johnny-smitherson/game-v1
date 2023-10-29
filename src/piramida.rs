@@ -17,7 +17,7 @@ pub struct Piramidă<const N: usize> {
 impl<const N: usize> Piramidesc for Piramidă<N> {
     fn base_tris(&mut self) -> Vec<Triangle> {
         let mut vec = Vec::<Triangle>::new();
-        for mut child in self.children.iter_mut() {
+        for child in self.children.iter_mut() {
             vec.extend(child.base_tris());
         }
         vec

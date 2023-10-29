@@ -3,6 +3,7 @@ use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
 use bevy_atmosphere::prelude::*;
 use bevy_inspector_egui::prelude::InspectorOptions;
+use bevy_mod_raycast::RaycastSource;
 use core::f32::consts::PI;
 use smart_default::SmartDefault;
 
@@ -16,6 +17,7 @@ use bevy::{
 };
 
 use crate::planet::TerrainSplitProbe;
+use crate::raycast::TerrainRaycastSet;
 
 // use std::collections::{vec_deque, VecDeque};
 use super::menu::UiMenuState;
@@ -141,6 +143,7 @@ fn setup_flying_camera(mut commands: Commands) {
             },
             FlyingCamera,
             AtmosphereCamera::default(),
+            RaycastSource::<TerrainRaycastSet>::new(),
             FogSettings {
                 color: Color::rgba(0.1, 0.2, 0.4, 1.0),
                 directional_light_color: Color::rgba(1.0, 0.95, 0.75, 0.5),

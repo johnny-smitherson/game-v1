@@ -2,9 +2,8 @@ pub mod bullet;
 pub mod tank;
 
 use bevy::prelude::*;
-use bullet::*;
-use tank::*;
-
+use bullet::BulletPlugin;
+use tank::TankPlugin;
 pub struct GameplayPlugin;
 impl Plugin for GameplayPlugin {
     fn build(&self, app: &mut App) {
