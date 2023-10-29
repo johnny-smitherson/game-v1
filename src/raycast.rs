@@ -3,12 +3,14 @@
 //! looking for a more fully-featured mouse picking plugin, try out bevy_mod_picking.
 
 use bevy::prelude::*;
-use bevy_mod_raycast::{prelude::*, print_intersections};
+use bevy_inspector_egui::InspectorOptions;
+use bevy_mod_raycast::{prelude::*, IntersectionData};
 
 pub struct RaycastPlugin;
 impl Plugin for RaycastPlugin {
     fn build(&self, app: &mut App) {
-        app
+        app.init_resource::<TerrainRaycastResult>()
+            .register_type::<TerrainRaycastResult>()
             // The DefaultRaycastingPlugin bundles all the functionality you might need into a single
             // plugin. This includes building rays, casting them, and placing a debug cursor at the
             // intersection. For more advanced uses, you can compose the systems in this plugin however
@@ -23,8 +25,8 @@ impl Plugin for RaycastPlugin {
                 First,
                 update_raycast_with_cursor.before(RaycastSystem::BuildRays::<TerrainRaycastSet>),
             )
-            .add_systems(Startup, setup)
-            .add_systems(Update, print_intersections::<TerrainRaycastSet>);
+            // .add_systems(Startup, setup)
+            .add_systems(PreUpdate, update_terrain_raycast_result);
     }
 }
 
@@ -33,6 +35,14 @@ impl Plugin for RaycastPlugin {
 /// some meshes with one ray casting source, and other meshes with a different ray casting source."
 #[derive(Reflect)]
 pub struct TerrainRaycastSet;
+
+#[derive(Reflect, Resource, Debug, Default, InspectorOptions)]
+#[reflect(Resource)]
+pub struct TerrainRaycastResult {
+    intersection: Option<IntersectionData>,
+    caster_entity: Option<Entity>,
+    hit_entity: Option<Entity>,
+}
 
 // Update our `RaycastSource` with the current cursor position every frame.
 fn update_raycast_with_cursor(
@@ -45,14 +55,31 @@ fn update_raycast_with_cursor(
     };
     for mut pick_source in &mut query {
         pick_source.cast_method = RaycastMethod::Screenspace(cursor_moved.position);
+        pick_source.should_early_exit = true;
     }
 }
 
-// Set up a simple 3D scene
-fn setup(mut commands: Commands) {
-    // Overwrite the default plugin state with one that enables the debug cursor. This line can be
-    // removed if the debug cursor isn't needed as the state is set to default values when the
-    // default plugin is added.
-    commands
-        .insert_resource(RaycastPluginState::<TerrainRaycastSet>::default().with_debug_cursor());
+fn update_terrain_raycast_result(
+    query: Query<(Entity, &RaycastMesh<TerrainRaycastSet>)>,
+    mut result: ResMut<TerrainRaycastResult>,
+) {
+    result.intersection = None;
+    result.caster_entity = None;
+    result.hit_entity = None;
+    for (hit_entity, intersection) in query.iter() {
+        for (caster_entity, intersection) in intersection.intersections.iter() {
+            result.intersection = Some(intersection.clone());
+            result.caster_entity = Some(caster_entity.clone());
+            result.hit_entity = Some(hit_entity);
+        }
+    }
 }
+
+// // Set up a simple 3D scene
+// fn setup(mut commands: Commands) {
+//     // Overwrite the default plugin state with one that enables the debug cursor. This line can be
+//     // removed if the debug cursor isn't needed as the state is set to default values when the
+//     // default plugin is added.
+//     commands
+//         .insert_resource(RaycastPluginState::<TerrainRaycastSet>::default().with_debug_cursor());
+// }

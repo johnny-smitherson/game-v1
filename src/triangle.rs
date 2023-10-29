@@ -10,7 +10,7 @@ use super::terrain::apply_height;
 use crate::terrain::{TerrainSettings, BASE_SPLIT_LEVEL};
 use bevy_rapier3d::prelude::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Reflect, Debug, Clone, Copy)]
 pub struct TriangleData {
     verts: [Vec3; 3],
     uvs: [Vec2; 3],
@@ -57,15 +57,29 @@ impl TriangleData {
 }
 
 /// Triangle made of 3 vec3 corners
-#[derive(Component, Debug, Clone)]
+#[derive(Reflect, Component, Debug, Clone)]
 pub struct Triangle {
+    /// info for current triangle
     data: TriangleData,
+    /// info for current triangle if no children, else all child triangles. used to build mesh into
     all_data: Vec<TriangleData>,
+    /// info for building skirts around triangle.
+    skirt_data: [TriangleData; 3],
+    /// depth of current node
     pub level: u8,
+    /// index in the parent's list of children
     pub id: u8,
+    /// list of children
+    #[reflect(ignore)]
     pub children: Option<[Box<Triangle>; 4]>,
-    // pub dirty: bool,
-    // pub parent_triangle: Option<Box<Triangle>>,
+    /// max level of this sub-tree where we find leafs
+    pub max_leaf_level: u8,
+    /// min level of this sub-tree where we find leafs
+    pub min_leaf_level: u8,
+    /// node key (chain of IDs)
+    coord: String,
+    /// marks if this is first update happened or not
+    was_updated: bool,
 }
 
 impl Default for Triangle {
@@ -78,6 +92,7 @@ impl Default for Triangle {
             ],
             0,
             0,
+            "",
         )
     }
 }
@@ -111,25 +126,57 @@ fn min3(l1: f32, l2: f32, l3: f32) -> f32 {
 }
 
 impl Triangle {
-    pub fn new(points: [Vec3; 3], level: u8, id: u8) -> Self {
+    pub fn new(points: [Vec3; 3], level: u8, id: u8, parent_coord: &str) -> Self {
         let data = TriangleData::new([
             apply_height(&points[0]),
             apply_height(&points[1]),
             apply_height(&points[2]),
         ]);
+
+        let coord = {
+            let mut coord = parent_coord.to_owned();
+            if coord.len() > 0 {
+                coord.push_str(".");
+            }
+            coord.push_str(id.to_string().as_str());
+            coord
+        };
+
+        let skirt_data = {
+            let [v1, v2, v3] = data.verts;
+            let v12 = (v1 + v2) * 0.5;
+            let v23 = (v2 + v3) * 0.5;
+            let v13 = (v1 + v3) * 0.5;
+            [
+                TriangleData::new([v1, apply_height(&v12), v2]),
+                TriangleData::new([v2, apply_height(&v23), v3]),
+                TriangleData::new([v3, apply_height(&v13), v1]),
+            ]
+        };
+
         Self {
             data,
             all_data: vec![data],
             level,
             id,
             children: None,
+            max_leaf_level: level,
+            min_leaf_level: level,
+            coord,
+            skirt_data: skirt_data,
+            was_updated: false,
         }
     }
+    pub fn coord(&self) -> &str {
+        return self.coord.as_str();
+    }
+
     pub fn reverse_points(&self) -> Self {
         Self::new(
             [self.data.verts[1], self.data.verts[0], self.data.verts[2]],
             self.level,
             self.id,
+            "",
         )
     }
 
@@ -193,20 +240,65 @@ impl Triangle {
         let v23 = (v2 + v3) * 0.5;
         let v13 = (v1 + v3) * 0.5;
 
+        /*
+        Triangle ID vs. vertex ID.
+        ->            v1
+        ->            /\
+        ->           /  \
+        ->          / 2  \
+        ->      v12 ------ v13
+        ->        / \ 1  / \
+        ->       /   \  /   \
+        ->      /  3  \/  4  \
+        ->      ---------------
+        ->    v2      v23       v3
+        id=1 is neighbour of 2,3,4.
+        */
         self.children = Some([
-            Box::new(Triangle::new([v12, v23, v13], self.level + 1, 1)),
-            Box::new(Triangle::new([v1, v12, v13], self.level + 1, 2)),
-            Box::new(Triangle::new([v12, v2, v23], self.level + 1, 3)),
-            Box::new(Triangle::new([v13, v23, v3], self.level + 1, 4)),
+            Box::new(Triangle::new(
+                [v12, v23, v13],
+                self.level + 1,
+                1,
+                self.coord(),
+            )),
+            Box::new(Triangle::new(
+                [v1, v12, v13],
+                self.level + 1,
+                2,
+                self.coord(),
+            )),
+            Box::new(Triangle::new(
+                [v12, v2, v23],
+                self.level + 1,
+                3,
+                self.coord(),
+            )),
+            Box::new(Triangle::new(
+                [v13, v23, v3],
+                self.level + 1,
+                4,
+                self.coord(),
+            )),
         ]);
+        self.max_leaf_level = self.level + 1;
     }
     fn merge(&mut self) {
         assert!(self.is_split(), "can't mrege without children");
         self.children = None;
+        self.max_leaf_level = self.level;
+    }
+
+    pub fn update_split(&mut self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
+        let dirty = self._do_update_split(pos, settings);
+
+        if !self.was_updated || dirty {
+            self.was_updated = true;
+        }
+        dirty
     }
 
     /// returns true if we changed something notable and you wanna update the thing
-    pub fn update_split(&mut self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
+    fn _do_update_split(&mut self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
         use rayon::prelude::*;
 
         let mut dirty: bool = false;
@@ -220,12 +312,12 @@ impl Triangle {
         }
         // triger children
         if self.is_split() {
-            let child_results: Vec<bool> = self
+            let child_results: Vec<_> = self
                 .children
                 .as_mut()
                 .expect("wtf")
                 .par_iter_mut()
-                .map(|child| child.as_mut().update_split(pos, settings))
+                .map(|child| child.as_mut()._do_update_split(pos, settings))
                 .collect();
 
             for child_dirty in child_results {
@@ -233,29 +325,63 @@ impl Triangle {
             }
         }
         // pull data from children
-        if dirty && self.level >= BASE_SPLIT_LEVEL {
-            self.all_data = Vec::<TriangleData>::new();
+        if ((!self.was_updated) || dirty) && self.level >= BASE_SPLIT_LEVEL {
+            self.all_data.clear();
             if self.is_split() {
+                self.max_leaf_level = self
+                    .children
+                    .as_ref()
+                    .expect("no children")
+                    .iter()
+                    .map(|x| x.max_leaf_level)
+                    .max()
+                    .expect("no children");
+                self.min_leaf_level = self
+                    .children
+                    .as_ref()
+                    .expect("no children")
+                    .iter()
+                    .map(|x| x.min_leaf_level)
+                    .min()
+                    .expect("no children");
+
                 for child in self.children.as_ref().expect("wtf").iter() {
                     self.all_data.extend(child.all_data.iter());
+
+                    // if child is leaf but non-max-level, add its skirts
+                    if (!child.is_split())
+                        && (child.level < self.max_leaf_level || child.level == self.min_leaf_level)
+                    {
+                        for t in child.skirt_data.iter() {
+                            // in skirts, the midpoint is always the second point. we only want the skirt if the point is lower
+                            if t.verts[1].y <= (t.verts[0].y + t.verts[2].y) * 0.5 {
+                                self.all_data.push(t.clone());
+                            }
+                        }
+                        // self.all_data.extend(child.skirt_data);
+                    }
                 }
             } else {
                 self.all_data.push(self.data);
+                self.max_leaf_level = self.level;
+                self.min_leaf_level = self.level;
             }
         }
         dirty
     }
 
     pub fn tri_count(&self) -> usize {
-        if !self.is_split() {
-            1
-        } else {
-            let mut count: usize = 0;
-            for child in self.children.as_ref().expect("msg").iter().as_ref() {
-                count += child.tri_count();
-            }
-            count
-        }
+        return self.all_data.len();
+
+        // if !self.is_split() {
+        //     1
+        // } else {
+        //     let mut count: usize = 0;
+        //     for child in self.children.as_ref().expect("msg").iter().as_ref() {
+        //         count += child.tri_count();
+        //     }
+        //     count
+        // }
     }
 
     fn should_split(&self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
@@ -272,6 +398,7 @@ impl Triangle {
                 < (1.0 - settings.SPLIT_LAZY_COEF) * settings.TESSELATION_VALUE
         }
     }
+
     fn should_merge(&self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
         if self.level <= settings.MIN_SPLIT_LEVEL || self.level <= BASE_SPLIT_LEVEL {
             return false;
@@ -289,6 +416,7 @@ impl Triangle {
         if all_pos.is_empty() {
             return 666666.0_f32;
         }
+
         all_pos
             .iter()
             .map(|pos| (*pos - self.data.center).length())

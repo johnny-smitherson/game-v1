@@ -32,17 +32,17 @@ pub fn egui_ui_system(mut egui_context: EguiContexts, mut ui_state: ResMut<UiMen
         ui.label("Planet Settings");
 
         ui.add(
-            egui::Slider::new(&mut ui_state.settings.MAX_SPLIT_LEVEL, 3..=35)
+            egui::Slider::new(&mut ui_state.settings.MAX_SPLIT_LEVEL, 3..=20)
                 .text("MAX_SPLIT_LEVEL"),
         );
 
         ui.add(
-            egui::Slider::new(&mut ui_state.settings.MIN_SPLIT_LEVEL, 0..=6)
+            egui::Slider::new(&mut ui_state.settings.MIN_SPLIT_LEVEL, 0..=10)
                 .text("MIN_SPLIT_LEVEL"),
         );
 
         ui.add(
-            egui::Slider::new(&mut ui_state.settings.TESSELATION_VALUE, 1.0..=30.0)
+            egui::Slider::new(&mut ui_state.settings.TESSELATION_VALUE, 1.0..=10.0)
                 .text("TESSELATION_VALUE"),
         );
 

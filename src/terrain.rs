@@ -23,8 +23,8 @@ pub struct TerrainSettings {
     #[inspector(min=BASE_SPLIT_LEVEL, max=10)]
     pub MIN_SPLIT_LEVEL: u8,
 
-    #[default(4.0)]
-    #[inspector(min = 1.0, max = 15.0)]
+    #[default(3.0)]
+    #[inspector(min = 1.0, max = 10.0)]
     pub TESSELATION_VALUE: f32,
 
     #[default(0.3)]

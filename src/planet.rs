@@ -14,7 +14,8 @@ use rayon::prelude::IntoParallelRefMutIterator;
 pub struct PlanetPlugin;
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_planet)
+        app.register_type::<Triangle>()
+            .add_systems(Startup, setup_planet)
             .add_systems(PreUpdate, update_triangle_split);
     }
 }
@@ -123,6 +124,8 @@ fn setup_planet(
     for (_tri_idx, tri) in tris.into_iter().enumerate() {
         let (mesh, collider) = tri.generate_mesh(&ui_state.settings);
         let mesh_asset = meshes.add(mesh);
+        let mut name = "Base Planet Triangle ".to_owned();
+        name.push_str(tri.coord());
 
         let tri_ent = commands
             .spawn((
@@ -137,7 +140,7 @@ fn setup_planet(
                 Ccd::enabled(),
                 // PickableBundle::default(),
                 RaycastMesh::<TerrainRaycastSet>::default(),
-                Name::new("some base planet triangle"),
+                Name::new(name),
             ))
             .id();
         commands.entity(tri_ent).set_parent(planet_ent);

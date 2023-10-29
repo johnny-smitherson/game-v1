@@ -36,7 +36,8 @@ impl Piramidă<1> {
             children: [Triangle::new(
                 [v1 * PLANET_RADIUS, v2 * PLANET_RADIUS, v3 * PLANET_RADIUS],
                 0,
-                0,
+                1,
+                "",
             )
             .reverse_points()],
         }
@@ -52,10 +53,10 @@ impl Piramidă<4> {
         let v4 = Vec3::new(0., 0., 1.);
         Self {
             children: [
-                Triangle::new([v1, v2, v3], 0, 1).reverse_points(),
-                Triangle::new([v1, v3, v4], 0, 2).reverse_points(),
-                Triangle::new([v2, v1, v4], 0, 3).reverse_points(),
-                Triangle::new([v3, v2, v4], 0, 4).reverse_points(),
+                Triangle::new([v1, v2, v3], 0, 1, "").reverse_points(),
+                Triangle::new([v1, v3, v4], 0, 2, "").reverse_points(),
+                Triangle::new([v2, v1, v4], 0, 3, "").reverse_points(),
+                Triangle::new([v3, v2, v4], 0, 4, "").reverse_points(),
             ],
         }
     }
@@ -79,26 +80,26 @@ impl Piramidă<20> {
 
         Self {
             children: [
-                Triangle::new([v2, v3, v7], 0, 1),
-                Triangle::new([v2, v8, v3], 0, 2),
-                Triangle::new([v4, v5, v6], 0, 3),
-                Triangle::new([v5, v4, v9], 0, 4),
-                Triangle::new([v7, v6, v12], 0, 5),
-                Triangle::new([v6, v7, v11], 0, 6),
-                Triangle::new([v10, v11, v3], 0, 7),
-                Triangle::new([v11, v10, v4], 0, 8),
-                Triangle::new([v8, v9, v10], 0, 9),
-                Triangle::new([v9, v8, v1], 0, 10),
-                Triangle::new([v12, v1, v2], 0, 11),
-                Triangle::new([v1, v12, v5], 0, 12),
-                Triangle::new([v7, v3, v11], 0, 13),
-                Triangle::new([v2, v7, v12], 0, 14),
-                Triangle::new([v4, v6, v11], 0, 15),
-                Triangle::new([v6, v5, v12], 0, 16),
-                Triangle::new([v3, v8, v10], 0, 17),
-                Triangle::new([v8, v2, v1], 0, 18),
-                Triangle::new([v4, v10, v9], 0, 19),
-                Triangle::new([v5, v9, v1], 0, 20),
+                Triangle::new([v2, v3, v7], 0, 1, ""),
+                Triangle::new([v2, v8, v3], 0, 2, ""),
+                Triangle::new([v4, v5, v6], 0, 3, ""),
+                Triangle::new([v5, v4, v9], 0, 4, ""),
+                Triangle::new([v7, v6, v12], 0, 5, ""),
+                Triangle::new([v6, v7, v11], 0, 6, ""),
+                Triangle::new([v10, v11, v3], 0, 7, ""),
+                Triangle::new([v11, v10, v4], 0, 8, ""),
+                Triangle::new([v8, v9, v10], 0, 9, ""),
+                Triangle::new([v9, v8, v1], 0, 10, ""),
+                Triangle::new([v12, v1, v2], 0, 11, ""),
+                Triangle::new([v1, v12, v5], 0, 12, ""),
+                Triangle::new([v7, v3, v11], 0, 13, ""),
+                Triangle::new([v2, v7, v12], 0, 14, ""),
+                Triangle::new([v4, v6, v11], 0, 15, ""),
+                Triangle::new([v6, v5, v12], 0, 16, ""),
+                Triangle::new([v3, v8, v10], 0, 17, ""),
+                Triangle::new([v8, v2, v1], 0, 18, ""),
+                Triangle::new([v4, v10, v9], 0, 19, ""),
+                Triangle::new([v5, v9, v1], 0, 20, ""),
             ],
         }
     }
