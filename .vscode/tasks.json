@@ -1,0 +1,77 @@
+{
+	"version": "2.0.0",
+	"inputs": [
+		{
+		  "id": "terminate",
+		  "type": "command",
+		  "command": "workbench.action.tasks.terminate",
+		  "args": "terminateAll"
+		}
+	],
+	"tasks": [
+
+		// KILLALL
+		{
+			"label": "Terminate All Tasks",
+			"command": "echo ${input:terminate}",
+			"type": "shell",
+			"problemMatcher": [],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				// "revealProblems": "onProblem",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": false,
+				// "group": "build-term-grp",
+			},
+		},
+
+
+		// DO ALL IN ONE SCRIPT
+		{
+			"type": "shell",
+			"command": "./run.sh",
+			"options": {
+				"env": {
+					// "RUSTC_WRAPPER": "sccache",
+					"RUST_BACKTRACE": "0",
+
+				},
+				"cwd": "${workspaceFolder}",
+				"shell": {
+					"executable": ""
+				}
+			},
+			// "env": {
+			// },
+			"problemMatcher": [
+				"$rustc",
+				"$rustc-json",
+				"$rustc-watch",
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			  },
+			"label": "cargo run all",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"revealProblems": "onProblem",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": false,
+				// "group": "build-term-grp",
+			},
+			"runOptions": {
+				"instanceLimit": 1,
+				"runOn": "folderOpen",
+				"reevaluateOnRerun": true,
+			},
+		},
+	],
+
+}

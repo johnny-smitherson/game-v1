@@ -8,6 +8,8 @@ mod raycast;
 mod terrain;
 mod triangle;
 
+use std::time::Duration;
+
 use flying_camera::FlyingCameraPlugin;
 use game_assets::GameAssetsPlugin;
 use gameplay::GameplayPlugin;
@@ -21,6 +23,7 @@ use bevy::{
         RenderPlugin,
     },
     window::{PresentMode, WindowResolution},
+    winit::WinitSettings,
 };
 
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -53,7 +56,14 @@ fn main() {
                     ..default()
                 }),
         )
-        .insert_resource(Msaa::Sample4)
+        .insert_resource(WinitSettings {
+            focused_mode: bevy::winit::UpdateMode::Continuous,
+            unfocused_mode: bevy::winit::UpdateMode::ReactiveLowPower {
+                max_wait: Duration::from_millis(1000),
+            },
+            ..default()
+        })
+        // .insert_resource(Msaa::Sample4)
         // .add_systems(PreStartup, setup_world_scene)
         .insert_resource(AmbientLight {
             color: Color::WHITE,

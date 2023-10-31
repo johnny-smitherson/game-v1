@@ -163,7 +163,7 @@ fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
 
     let tank_model_scene = scene_assets
         .scenes
-        .get("ORIGINAL/Tanks and Armored Vehicle.glb")
+        .get("3d/ORIGINAL/Tanks and Armored Vehicle.glb")
         .expect("KEY NOT FOUND");
 
     const TANK_COUNT: i32 = 12;
@@ -200,12 +200,12 @@ fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
             commands
                 .entity(tank_id)
                 .insert(PlayerControlledTank)
-                .insert(Name::new("Player Tank"));
+                .insert(Name::new(format!("Player Tank ({})", i)));
         } else {
             commands
                 .entity(tank_id)
                 .insert(AiControlledTank)
-                .insert(Name::new("AI Tank"));
+                .insert(Name::new(format!("AI Tank ({})", i)));
         }
     }
 }

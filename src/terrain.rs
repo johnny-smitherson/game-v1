@@ -9,7 +9,7 @@ pub const MOUNTAIN_HEIGHT: f32 = 1000.0;
 pub const PLANET_RADIUS: f32 = 100000.0;
 
 pub const NOISE_BASE_FREQ: f32 = 10000.0;
-pub const BASE_SPLIT_LEVEL: u8 = 3;
+pub const BASE_SPLIT_LEVEL: u8 = 4;
 
 #[allow(non_snake_case)]
 #[derive(Debug, Copy, Clone, Reflect, InspectorOptions, SmartDefault)]
@@ -19,7 +19,7 @@ pub struct TerrainSettings {
     #[inspector(min=BASE_SPLIT_LEVEL, max=30)]
     pub MAX_SPLIT_LEVEL: u8,
 
-    #[default(BASE_SPLIT_LEVEL)]
+    #[default(BASE_SPLIT_LEVEL+2)]
     #[inspector(min=BASE_SPLIT_LEVEL, max=10)]
     pub MIN_SPLIT_LEVEL: u8,
 

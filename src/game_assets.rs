@@ -33,13 +33,15 @@ fn load_glb_scenes(mut scene_assets: ResMut<GameSceneAssets>, ass: Res<AssetServ
 
     for prefix in ["ORIGINAL", "ANGLE_DISSOLVE"] {
         for filename in filenames {
-            let mut path = prefix.to_owned();
+            let mut path = "3d".to_owned();
+            path.push_str("/");
+            path.push_str(prefix);
             path.push_str("/");
             path.push_str(filename);
             let key = path.clone();
             path.push_str("#Scene0");
             let path = path;
-            info!("LOADING GLB SCENE: {}", path);
+            info!("LOADING GLB SCENE: {} into key 'key' {}", path, key);
 
             let my_gltf: Handle<Scene> = ass.load(path);
 
@@ -56,7 +58,7 @@ impl Plugin for GameAssetsPlugin {
             .register_type::<BulletAssets>()
             .init_resource::<GameSceneAssets>()
             .register_type::<GameSceneAssets>()
-            .add_systems(Startup, (setup_bullet_assets, load_glb_scenes));
+            .add_systems(PreStartup, (setup_bullet_assets, load_glb_scenes));
     }
 }
 

@@ -63,8 +63,10 @@ pub struct Triangle {
     data: TriangleData,
     /// info for current triangle if no children, else all child triangles. used to build mesh into
     all_data: Vec<TriangleData>,
-    /// info for building skirts around triangle.
+    /// info for building skirts around this triangle. Generated and kept all the time.
     skirt_data: [TriangleData; 3],
+    /// info for the required skirts for all sub-nodes.
+    all_skirt_data: Vec<TriangleData>,
     /// depth of current node
     pub level: u8,
     /// index in the parent's list of children
@@ -87,8 +89,8 @@ impl Default for Triangle {
         Triangle::new(
             [
                 Vec3::new(1.0, 0.0, 0.0),
-                Vec3::new(0.0, 0.0, 0.0),
-                Vec3::new(0.0, 0.0, -1.0),
+                Vec3::new(0.0, -0.5, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
             ],
             0,
             0,
@@ -157,6 +159,7 @@ impl Triangle {
         Self {
             data,
             all_data: vec![data],
+            all_skirt_data: vec![],
             level,
             id,
             children: None,
@@ -209,7 +212,7 @@ impl Triangle {
         let mut all_indices_grp = Vec::<[u32; 3]>::new();
 
         let mut idx: u32 = 0;
-        for data in self.all_data.iter() {
+        for data in self.all_data.iter().chain(self.all_skirt_data.iter()) {
             all_verts.extend_from_slice(&data.verts);
             all_norms.extend_from_slice(&data.norm);
             all_uvs.extend_from_slice(&data.uvs);
@@ -327,6 +330,7 @@ impl Triangle {
         // pull data from children
         if ((!self.was_updated) || dirty) && self.level >= BASE_SPLIT_LEVEL {
             self.all_data.clear();
+            self.all_skirt_data.clear();
             if self.is_split() {
                 self.max_leaf_level = self
                     .children
@@ -345,21 +349,22 @@ impl Triangle {
                     .min()
                     .expect("no children");
 
-                for child in self.children.as_ref().expect("wtf").iter() {
+                for child in self.children.as_mut().expect("wtf").iter_mut() {
                     self.all_data.extend(child.all_data.iter());
 
-                    // if child is leaf but non-max-level, add its skirts
+                    // if child is leaf but non-max-level, add its skirts to itself
                     if (!child.is_split())
                         && (child.level < self.max_leaf_level || child.level == self.min_leaf_level)
                     {
                         for t in child.skirt_data.iter() {
                             // in skirts, the midpoint is always the second point. we only want the skirt if the point is lower
                             if t.verts[1].y <= (t.verts[0].y + t.verts[2].y) * 0.5 {
-                                self.all_data.push(t.clone());
+                                child.all_skirt_data.push(t.clone());
                             }
                         }
-                        // self.all_data.extend(child.skirt_data);
                     }
+
+                    self.all_skirt_data.extend(child.all_skirt_data.iter());
                 }
             } else {
                 self.all_data.push(self.data);
