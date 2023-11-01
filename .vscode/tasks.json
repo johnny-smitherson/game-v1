@@ -36,8 +36,7 @@
 			"options": {
 				"env": {
 					// "RUSTC_WRAPPER": "sccache",
-					"RUST_BACKTRACE": "0",
-
+					"RUST_BACKTRACE": "1",
 				},
 				"cwd": "${workspaceFolder}",
 				"shell": {
@@ -58,8 +57,8 @@
 			"label": "cargo run all",
 			"presentation": {
 				"echo": true,
-				"reveal": "always",
-				"revealProblems": "onProblem",
+				"reveal": "silent",
+				// "revealProblems": "onProblem",
 				"focus": false,
 				"panel": "shared",
 				"showReuseMessage": false,

@@ -49,6 +49,7 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         present_mode: PresentMode::AutoVsync,
+                        window_level: bevy::window::WindowLevel::AlwaysOnBottom,
                         resolution: WindowResolution::new(1920., 1080.),
                         title: "The Wuindow!".into(),
                         ..default()

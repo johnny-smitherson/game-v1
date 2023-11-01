@@ -50,7 +50,7 @@ fn shoot_bullet(
     }
     let tank = player_tank.get_single().expect("no player tank wtf.");
 
-    const SHOOT_IMPULSE_SCALE: f32 = 0.3;
+    const SHOOT_IMPULSE_SCALE: f32 = 0.15;
     const SHOOT_ROTATION: f32 = 5.0;
 
     let fwd = tank.fire_direction;
@@ -86,9 +86,13 @@ fn shoot_bullet(
             linear_damping: 0.05,
             angular_damping: 0.05,
         })
-        .insert(ExternalImpulse {
-            impulse: fwd * tank.power * SHOOT_IMPULSE_SCALE,
-            torque_impulse: quat * Vec3::new(0.0, 0.0, SHOOT_ROTATION),
+        // .insert(ExternalImpulse {
+        //     impulse: fwd * tank.power * SHOOT_IMPULSE_SCALE,
+        //     torque_impulse: quat * Vec3::new(0.0, 0.0, SHOOT_ROTATION),
+        // })
+        .insert(Velocity {
+            linvel: fwd * tank.power * SHOOT_IMPULSE_SCALE,
+            angvel: quat * Vec3::new(0.0, 0.0, SHOOT_ROTATION),
         })
         .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(Name::new("BULLET"))

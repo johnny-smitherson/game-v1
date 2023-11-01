@@ -4,16 +4,16 @@
     },
     "files.eol": "\n",
     "files.autoSave": "afterDelay",
-    "files.autoSaveDelay": 5000,
+    "files.autoSaveDelay": 666,
 
     "[rust]": {
         "editor.defaultFormatter": "rust-lang.rust-analyzer", // Makes the magic
         "editor.formatOnSave": true // Optional
     },
 
-    "triggerTaskOnSave.on": true,
-    "triggerTaskOnSave.delay": 666,
-    "triggerTaskOnSave.showNotifications": true,
+    "triggerTaskOnSave.on": false,
+    "triggerTaskOnSave.delay": 3333,
+    "triggerTaskOnSave.showNotifications": false,
     "triggerTaskOnSave.showStatusBarToggle": true,
     "triggerTaskOnSave.restart": true,
     "triggerTaskOnSave.tasks": {
@@ -21,20 +21,26 @@
             "src/**/*.rs",
             "lib/**/*.rs",
             "*.toml",
-            "*.json",
-        ],
-    },
+            "*.json"
+        ]
+    },        
+    // EXT IS FUCKING BUGGED - ENTERS RESTART LOOP - DO NOT USE !!
+    // "triggerTaskOnSave.resultIndicator": "statusBar.background",
+    // "triggerTaskOnSave.failureColour": "#ff0000",
+    // "triggerTaskOnSave.successColour": "#00ff00",
+    // "triggerTaskOnSave.resultIndicatorResetTimeout": 1000,
 
     "terminal.integrated.env.windows": {
         // "RUSTC_WRAPPER": "sccache",
-        "RUST_BACKTRACE": "1",
+        "RUST_BACKTRACE": "1"
     },
     "terminal.integrated.env.linux": {
         // "RUSTC_WRAPPER": "sccache",
-        "RUST_BACKTRACE": "1",
+        "RUST_BACKTRACE": "1"
     },
     "terminal.integrated.env.osx": {
         // "RUSTC_WRAPPER": "sccache",
-        "RUST_BACKTRACE": "1",
+        "RUST_BACKTRACE": "1"
     },
+    "workbench.colorCustomizations": {}
 }  

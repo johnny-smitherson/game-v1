@@ -240,7 +240,7 @@ fn get_portal_effect() -> EffectAsset {
     let init_age = SetAttributeModifier::new(Attribute::AGE, age);
 
     // Give a bit of variation by randomizing the lifetime per particle
-    let lifetime = writer.lit(0.6).uniform(writer.lit(2.3)).expr();
+    let lifetime = writer.lit(0.5).uniform(writer.lit(0.5)).expr();
     let init_lifetime = SetAttributeModifier::new(Attribute::LIFETIME, lifetime);
 
     // Add drag to make particles slow down a bit after the initial acceleration
@@ -251,7 +251,7 @@ fn get_portal_effect() -> EffectAsset {
 
     let tangent_accel = TangentAccelModifier::constant(&mut module, Vec3::ZERO, Vec3::Y, -13.);
 
-    EffectAsset::new(32768, Spawner::rate(5000.0.into()), module)
+    EffectAsset::new(32768, Spawner::rate(60.0.into()), module)
         .with_name("portal")
         .init(init_pos)
         .init(init_age)
