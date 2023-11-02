@@ -1,7 +1,7 @@
-use bevy::prelude::{info, Reflect, Vec2};
+use bevy::prelude::{Reflect, Vec2};
 use std::{cmp::Ordering, f32::consts::PI};
 
-use rand::Rng;
+
 
 pub const TANK_BULLET_SPEED_PER_POWER: f32 = 0.25;
 pub const GRAVITY_SCALE: f32 = 1.0;
@@ -225,8 +225,8 @@ fn _compute_ballistic_solution_with_damping(
     // https://www.lehman.edu/faculty/dgaranin/Mathematical_Physics/Mathematical_physics-10-Differential_equations.pdf
     // δθi = αL / (v0 * Cos[2*ϑi] * Cos[ϑi])  * (gL / 3 v0^2)
     let correct_angle = |ang: f32, range: f32| {
-        let t1 = ((alpha * range) / (speed * ang.cos() * (2.0 * ang).cos()));
-        let t2 = ((gravity * range) / (3.0 * speed * speed));
+        let t1 = (alpha * range) / (speed * ang.cos() * (2.0 * ang).cos());
+        let t2 = (gravity * range) / (3.0 * speed * speed);
         t1 * t2
     };
     _ang1 += correct_angle(_ang1, range);

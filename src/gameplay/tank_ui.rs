@@ -1,7 +1,7 @@
 //! This example illustrates how to create a button that changes color and text based on its
 //! interaction state.
 
-use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
+
 use bevy::prelude::*;
 
 use super::events::{TankCommandEvent, TankCommandEventType};

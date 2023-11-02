@@ -72,7 +72,7 @@ fn control_tank_aim(
 ) {
     for event in tank_command_events.iter() {
         if let TankCommandEventType::AimAtPoint(aim_pos) = event.event_type {
-            if let Ok((mut tank, tank_tr)) = tank_q.get_mut(event.tank_entity) {
+            if let Ok((mut tank, _tank_tr)) = tank_q.get_mut(event.tank_entity) {
                 let _tank_pos = tank.fire_origin; //  &tank_tr.translation;
                                                   // let _tank_pos = apply_height(&_tank_pos);
                 let diff = aim_pos - _tank_pos;
@@ -110,7 +110,7 @@ fn debug_show_tank_aim(
             .collect();
         gizmos.linestrip(traj_3d, color);
     };
-    for (tank_tr, tank) in tanks.iter() {
+    for (_tank_tr, tank) in tanks.iter() {
         let tank_pos = tank.fire_origin; // tank_tr.translation;
         if let Some(solutions) = &tank.fire_solutions {
             if let Some(solution) = &solutions.low_sol {
@@ -357,7 +357,7 @@ fn read_tank_gravity_result(
 }
 
 fn tank_fix_above_terrain(mut transforms: Query<&mut Transform, With<TankGravity>>) {
-    for mut transform in transforms.iter_mut() {
+    for transform in transforms.iter_mut() {
         const RESET_BELOW: f32 = 5.0;
         let terrain_height = height(&Vec3::ZERO);
         if transform.translation.y < terrain_height - RESET_BELOW {
