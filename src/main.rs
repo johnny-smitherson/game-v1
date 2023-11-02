@@ -51,7 +51,11 @@ fn main() {
                         present_mode: PresentMode::AutoVsync,
                         window_level: bevy::window::WindowLevel::AlwaysOnBottom,
                         resolution: WindowResolution::new(1920., 1080.),
-                        title: "The Wuindow!".into(),
+                        title: "Game V3".into(),
+                        // Tells wasm to resize the window according to the available canvas
+                        fit_canvas_to_parent: true,
+                        // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
+                        prevent_default_event_handling: false,
                         ..default()
                     }),
                     ..default()

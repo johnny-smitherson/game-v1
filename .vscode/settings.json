@@ -12,10 +12,10 @@
     },
 
     "triggerTaskOnSave.on": true,
-    "triggerTaskOnSave.delay": 333,
+    "triggerTaskOnSave.delay": 666,
     "triggerTaskOnSave.showNotifications": false,
     "triggerTaskOnSave.showStatusBarToggle": true,
-    "triggerTaskOnSave.restart": false,
+    "triggerTaskOnSave.restart": true,
     "triggerTaskOnSave.tasks": {
         "cargo run all": [
             "src/**/*.rs",
