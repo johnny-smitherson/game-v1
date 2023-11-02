@@ -43,7 +43,10 @@ impl Plugin for FlyingCameraPlugin {
                 TimerMode::Repeating,
             )))
             .add_systems(PreStartup, (setup_flying_camera, setup_sun))
-            .add_systems(Update, (cursor_grab, daylight_cycle, rotate_player).chain());
+            .add_systems(
+                Update,
+                (cursor_grab, daylight_cycle, rotate_camera_by_mouse).chain(),
+            );
     }
 }
 
@@ -235,9 +238,9 @@ impl Default for FlyingCameraMovementSettings {
 
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::type_complexity)]
-fn rotate_player(
-    mut query_player: Query<(&mut Transform, &mut FlyingCameraPivot), With<FlyingCameraPivot>>,
-    mut query_camera: Query<&mut Transform, (With<FlyingCamera>, Without<FlyingCameraPivot>)>,
+fn rotate_camera_by_mouse(
+    mut pivot_query: Query<(&mut Transform, &mut FlyingCameraPivot), With<FlyingCameraPivot>>,
+    mut camera_query: Query<&mut Transform, (With<FlyingCamera>, Without<FlyingCameraPivot>)>,
 
     time: Res<Time>,
     mut mouse_input_state: ResMut<FlyingCameraInputState>,
@@ -267,29 +270,27 @@ fn rotate_player(
         }
     }
 
-    let (mut player_tr, mut player_comp) = query_player.get_single_mut().expect("no player");
-    let mut camera_tr = query_camera.get_single_mut().expect("no camera");
+    let (mut pivot_tr, mut pivot_comp) = pivot_query.get_single_mut().expect("no player");
+    let mut camera_tr = camera_query.get_single_mut().expect("no camera");
 
     // capture movement events: wasd/scroll wheel
     {
         let mut velocity = Vec3::ZERO;
         let _up = Vec3::Y;
-        let _right = player_tr.right().normalize();
+        let _right = pivot_tr.right().normalize();
         let _forward = _up.cross(_right).normalize();
 
         for key in keys.get_pressed() {
-            if ui_state.is_mouse_captured {
-                match key {
-                    KeyCode::W => velocity += _forward,
-                    KeyCode::S => velocity -= _forward,
-                    KeyCode::A => velocity -= _right,
-                    KeyCode::D => velocity += _right,
-                    _ => (),
-                }
+            match key {
+                KeyCode::W => velocity += _forward,
+                KeyCode::S => velocity -= _forward,
+                KeyCode::A => velocity -= _right,
+                KeyCode::D => velocity += _right,
+                _ => (),
             }
         }
 
-        if !ui_state.is_mouse_captured && ui_state.enable_animation {
+        if ui_state.enable_animation {
             // println!("{}", time.elapsed_seconds());
             velocity += _forward * 1.0; //(time.elapsed_seconds() / 3.0 + 1.0).sin();
             velocity += _right * (time.elapsed_seconds() / 4.0 + 2.0).cos();
@@ -303,7 +304,7 @@ fn rotate_player(
             let current_camera_exp =
                 camera_min_exp + (camera_max_exp - camera_min_exp) * camera_osc;
             let new_camera_height = 2.0_f32.powf(current_camera_exp);
-            player_comp.camera_height = new_camera_height;
+            pivot_comp.camera_height = new_camera_height;
 
             delta_state.pitch = -1.5 * current_camera_exp / camera_max_exp;
         }
@@ -311,18 +312,16 @@ fn rotate_player(
         {
             use bevy::input::mouse::MouseScrollUnit;
             for ev in scroll_evr.iter() {
-                if ui_state.is_mouse_captured {
-                    match ev.unit {
-                        MouseScrollUnit::Line => {
-                            player_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
-                        }
-                        MouseScrollUnit::Pixel => {
-                            player_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
-                        }
+                match ev.unit {
+                    MouseScrollUnit::Line => {
+                        pivot_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
+                    }
+                    MouseScrollUnit::Pixel => {
+                        pivot_comp.camera_height /= (ev.y.clamp(-1.0, 1.0) + 10.0) / 10.0;
                     }
                 }
             }
-            player_comp.camera_height = player_comp.camera_height.clamp(
+            pivot_comp.camera_height = pivot_comp.camera_height.clamp(
                 ui_state.settings.MIN_CAMERA_HEIGHT,
                 ui_state.settings.MAX_CAMERA_HEIGHT,
             );
@@ -330,25 +329,25 @@ fn rotate_player(
 
         velocity = velocity.normalize_or_zero();
 
-        player_tr.translation +=
-            velocity * time.delta_seconds() * settings.speed * player_comp.camera_height;
+        pivot_tr.translation +=
+            velocity * time.delta_seconds() * settings.speed * pivot_comp.camera_height;
     }
 
     camera_tr.rotation = Quat::from_axis_angle(Vec3::X, delta_state.pitch);
-    player_tr.rotate_local_y(mouse_delta_yaw);
+    pivot_tr.rotate_local_y(mouse_delta_yaw);
 
     let _up = Vec3::Y;
-    let _right = player_tr.right().normalize();
+    let _right = pivot_tr.right().normalize();
     let _forward = _up.cross(_right).normalize();
 
-    player_tr.translation.y = player_comp.camera_height + height(&player_tr.translation);
-    let mut _pos_xz = Vec3::new(player_tr.translation.x, 0.0, player_tr.translation.z);
+    pivot_tr.translation.y = pivot_comp.camera_height + height(&pivot_tr.translation);
+    let mut _pos_xz = Vec3::new(pivot_tr.translation.x, 0.0, pivot_tr.translation.z);
     let max_camera_xz = PLANET_RADIUS / 5.0;
     if _pos_xz.length() > max_camera_xz {
         _pos_xz = _pos_xz.normalize() * max_camera_xz;
-        player_tr.translation.x = _pos_xz.x;
-        player_tr.translation.z = _pos_xz.z;
+        pivot_tr.translation.x = _pos_xz.x;
+        pivot_tr.translation.z = _pos_xz.z;
     }
-    let _target = player_tr.translation + _forward;
-    player_tr.look_at(_target, _up);
+    let _target = pivot_tr.translation + _forward;
+    pivot_tr.look_at(_target, _up);
 }

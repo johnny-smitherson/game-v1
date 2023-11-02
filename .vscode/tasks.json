@@ -1,32 +1,32 @@
 {
 	"version": "2.0.0",
 	"inputs": [
-		{
-		  "id": "terminate",
-		  "type": "command",
-		  "command": "workbench.action.tasks.terminate",
-		  "args": "terminateAll"
-		}
+		// {
+		//   "id": "terminate",
+		//   "type": "command",
+		//   "command": "workbench.action.tasks.terminate",
+		//   "args": "terminateAll"
+		// }
 	],
 	"tasks": [
 
 		// KILLALL
-		{
-			"label": "Terminate All Tasks",
-			"command": "echo ${input:terminate}",
-			"type": "shell",
-			"problemMatcher": [],
-			"presentation": {
-				"echo": true,
-				"reveal": "always",
-				// "revealProblems": "onProblem",
-				"focus": false,
-				"panel": "shared",
-				"showReuseMessage": false,
-				"clear": false,
-				// "group": "build-term-grp",
-			},
-		},
+		// {
+		// 	"label": "Terminate All Tasks",
+		// 	"command": "echo ${input:terminate}",
+		// 	"type": "shell",
+		// 	"problemMatcher": [],
+		// 	"presentation": {
+		// 		"echo": true,
+		// 		"reveal": "always",
+		// 		// "revealProblems": "onProblem",
+		// 		"focus": false,
+		// 		"panel": "shared",
+		// 		"showReuseMessage": false,
+		// 		"clear": false,
+		// 		// "group": "build-term-grp",
+		// 	},
+		// },
 
 
 		// DO ALL IN ONE SCRIPT
@@ -47,7 +47,7 @@
 			// },
 			"problemMatcher": [
 				"$rustc",
-				"$rustc-json",
+				// "$rustc-json",
 				"$rustc-watch",
 			],
 			"group": {

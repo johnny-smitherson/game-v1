@@ -39,9 +39,9 @@ pub struct TerrainRaycastSet;
 #[derive(Reflect, Resource, Debug, Default, InspectorOptions)]
 #[reflect(Resource)]
 pub struct TerrainRaycastResult {
-    intersection: Option<IntersectionData>,
-    caster_entity: Option<Entity>,
-    hit_entity: Option<Entity>,
+    pub intersection: Option<IntersectionData>,
+    pub caster_entity: Option<Entity>,
+    pub hit_entity: Option<Entity>,
 }
 
 // Update our `RaycastSource` with the current cursor position every frame.

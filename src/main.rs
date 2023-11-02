@@ -74,7 +74,7 @@ fn main() {
         // PHYSICS AND SHIT
         // ==============
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugins(RapierDebugRenderPlugin::default())
+        // .add_plugins(RapierDebugRenderPlugin::default())
         // ==============
         // GAME PLUGINS
         // ==============

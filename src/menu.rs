@@ -91,11 +91,10 @@ fn cursor_grab_click(
     mut window_query: Query<&mut Window, With<PrimaryWindow>>,
 ) {
     if let Ok(mut window) = window_query.get_single_mut() {
-        if mouse.just_pressed(MouseButton::Left) && CursorGrabMode::None == window.cursor.grab_mode
-        {
+        if mouse.pressed(MouseButton::Middle) {
             window.cursor.grab_mode = CursorGrabMode::Confined;
-            window.cursor.visible = false;
-        } else if mouse.just_pressed(MouseButton::Right) {
+            // window.cursor.visible = false;
+        } else {
             window.cursor.grab_mode = CursorGrabMode::None;
             window.cursor.visible = true;
         }
