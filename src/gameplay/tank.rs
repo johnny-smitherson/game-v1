@@ -211,7 +211,7 @@ fn control_tank_mvmt(
 
         // increment bearing
         tank_data.bearing += _delta_bearing;
-        tank_data.bearing = tank_data.bearing % (PI * 2.0);
+        tank_data.bearing %= PI * 2.0;
         if tank_data.bearing < -PI {
             tank_data.bearing += PI * 2.0;
         } else if tank_data.bearing > PI {

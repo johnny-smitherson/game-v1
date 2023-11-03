@@ -6,10 +6,16 @@
     "files.autoSave": "afterDelay",
     "files.autoSaveDelay": 666,
 
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.check.extraArgs": [
+        "--", "--allow", "clippy::type_complexity",
+    ],
+
     "[rust]": {
         "editor.defaultFormatter": "rust-lang.rust-analyzer", // Makes the magic
-        "editor.formatOnSave": true // Optional
+        "editor.formatOnSave": true, // Optional
     },
+
 
     "triggerTaskOnSave.on": false,
     "triggerTaskOnSave.delay": 6666,

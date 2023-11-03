@@ -69,7 +69,7 @@ fn update_terrain_raycast_result(
     for (hit_entity, intersection) in query.iter() {
         for (caster_entity, intersection) in intersection.intersections.iter() {
             result.intersection = Some(intersection.clone());
-            result.caster_entity = Some(caster_entity.clone());
+            result.caster_entity = Some(*caster_entity);
             result.hit_entity = Some(hit_entity);
         }
     }

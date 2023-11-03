@@ -73,7 +73,7 @@ fn on_bullet_impact(
     for (bullet_ent, bullet_tr, bullet_vel, bullet_children, bullet_hit, bullet) in hits.iter() {
         // send event with all data
         events.send(BulletHitEvent {
-            bullet_vel: bullet_vel.clone(),
+            bullet_vel: *bullet_vel,
             bullet_pos: bullet_tr.translation,
             directly_hit_ent: bullet_hit.other_thing_hit,
             tank_ent: bullet.shooter,
@@ -90,7 +90,7 @@ fn on_bullet_impact(
             .id();
         // move the flying effect to tombstone and stop it from emitting
         for child in bullet_children.iter() {
-            if let Ok((effect_ent, mut effect)) = flying_effects.get_mut(child.clone()) {
+            if let Ok((effect_ent, mut effect)) = flying_effects.get_mut(*child) {
                 commands.entity(effect_ent).set_parent(tombstone_ent);
                 effect.set_active(false);
             }
@@ -191,14 +191,14 @@ fn capture_bullet_impact(
 ) {
     for collision_event in collision_events.iter() {
         if let CollisionEvent::Started(col1, col2, _flags) = collision_event {
-            if bullet_query.contains(col1.clone()) {
-                commands.entity(col1.clone()).insert(BulletHit {
-                    other_thing_hit: col2.clone(),
+            if bullet_query.contains(*col1) {
+                commands.entity(*col1).insert(BulletHit {
+                    other_thing_hit: *col2,
                 });
             }
-            if bullet_query.contains(col2.clone()) {
-                commands.entity(col2.clone()).insert(BulletHit {
-                    other_thing_hit: col1.clone(),
+            if bullet_query.contains(*col2) {
+                commands.entity(*col2).insert(BulletHit {
+                    other_thing_hit: *col1,
                 });
             }
         }

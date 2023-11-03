@@ -34,9 +34,9 @@ fn load_glb_scenes(mut scene_assets: ResMut<GameSceneAssets>, ass: Res<AssetServ
     for prefix in ["ORIGINAL", "ANGLE_DISSOLVE"] {
         for filename in filenames {
             let mut path = "3d".to_owned();
-            path.push_str("/");
+            path.push('/');
             path.push_str(prefix);
-            path.push_str("/");
+            path.push('/');
             path.push_str(filename);
             let key = path.clone();
             path.push_str("#Scene0");
@@ -128,7 +128,7 @@ fn get_firework_effect() -> EffectAsset {
         speed: (writer.rand(ScalarType::Float) * writer.lit(70.) + writer.lit(60.)).expr(),
     };
 
-    let effect = EffectAsset::new(32768, Spawner::once(666.0.into(), true), writer.finish())
+    EffectAsset::new(32768, Spawner::once(666.0.into(), true), writer.finish())
         .with_name("firework")
         .init(init_pos)
         .init(init_vel)
@@ -143,9 +143,7 @@ fn get_firework_effect() -> EffectAsset {
             gradient: size_gradient1,
             screen_space_size: false,
         })
-        .render(BillboardModifier {});
-
-    effect
+        .render(BillboardModifier {})
 }
 
 fn get_portal_effect() -> EffectAsset {

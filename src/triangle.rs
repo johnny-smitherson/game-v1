@@ -137,8 +137,8 @@ impl Triangle {
 
         let coord = {
             let mut coord = parent_coord.to_owned();
-            if coord.len() > 0 {
-                coord.push_str(".");
+            if !coord.is_empty() {
+                coord.push('.');
             }
             coord.push_str(id.to_string().as_str());
             coord
@@ -166,7 +166,7 @@ impl Triangle {
             max_leaf_level: level,
             min_leaf_level: level,
             coord,
-            skirt_data: skirt_data,
+            skirt_data,
             was_updated: false,
         }
     }
@@ -359,7 +359,7 @@ impl Triangle {
                         for t in child.skirt_data.iter() {
                             // in skirts, the midpoint is always the second point. we only want the skirt if the point is lower
                             if t.verts[1].y <= (t.verts[0].y + t.verts[2].y) * 0.5 {
-                                child.all_skirt_data.push(t.clone());
+                                child.all_skirt_data.push(*t);
                             }
                         }
                     }
@@ -376,7 +376,7 @@ impl Triangle {
     }
 
     pub fn tri_count(&self) -> usize {
-        return self.all_data.len();
+        self.all_data.len()
 
         // if !self.is_split() {
         //     1

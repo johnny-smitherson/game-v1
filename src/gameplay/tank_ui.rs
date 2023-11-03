@@ -1,7 +1,6 @@
 //! This example illustrates how to create a button that changes color and text based on its
 //! interaction state.
 
-
 use bevy::prelude::*;
 
 use super::events::{TankCommandEvent, TankCommandEventType};
@@ -147,7 +146,7 @@ pub fn build_tank_control_ui(commands: &mut Commands, asset_server: &Res<AssetSe
     let text_style = TextStyle {
         font: font.clone(),
         font_size: 27.0,
-        color: color,
+        color,
     };
 
     commands.entity(root).with_children(|parent| {
@@ -215,7 +214,7 @@ fn build_tank_control_row(
     let text_style = TextStyle {
         font: font.clone(),
         font_size: 27.0,
-        color: color,
+        color,
     };
 
     commands

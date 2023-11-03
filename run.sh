@@ -3,7 +3,7 @@ set -ex
 
 sleep 1.5
 # cargo fmt
-# cargo clippy #  -- -D warnings
+cargo clippy  -- -D warnings
 cargo build
 exit 0
 
