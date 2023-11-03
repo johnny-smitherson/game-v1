@@ -11,8 +11,8 @@
         "editor.formatOnSave": true // Optional
     },
 
-    "triggerTaskOnSave.on": true,
-    "triggerTaskOnSave.delay": 666,
+    "triggerTaskOnSave.on": false,
+    "triggerTaskOnSave.delay": 6666,
     "triggerTaskOnSave.showNotifications": false,
     "triggerTaskOnSave.showStatusBarToggle": true,
     "triggerTaskOnSave.restart": true,

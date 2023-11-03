@@ -52,7 +52,7 @@
 			],
 			"group": {
 				"kind": "build",
-				"isDefault": true
+				"isDefault": false
 			  },
 			"label": "cargo run all",
 			"presentation": {

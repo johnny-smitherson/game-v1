@@ -2,9 +2,11 @@
 
 - [x] tank controlller
 - [x] tank shooting
-- [ ] bunch of tanks
+- [x] bunch of tanks
 - [ ] bullet kills tanks
-- [ ] AI contorolled tank
+- [ ] death explosion effect
+- [ ] player tank moves to right click
+- [ ] AI contorolled tank - shoot closest, move randomly
 
 
 
