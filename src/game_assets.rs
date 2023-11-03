@@ -69,17 +69,17 @@ fn setup_bullet_assets(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut bullet_assets: ResMut<BulletAssets>,
 ) {
-    const BULLET_SIZE: f32 = 1.0;
+    const BULLET_SIZE: f32 = 0.05;
 
-    let mesh = meshes.add(Mesh::from(shape::Cube { size: BULLET_SIZE }));
+    let mesh = meshes.add(Mesh::from(shape::UVSphere {
+        radius: BULLET_SIZE / 2.0_f32,
+        sectors: 36,
+        stacks: 18,
+    }));
     bullet_assets.mesh = mesh;
     let material = materials.add(Color::rgb(0.8, 0.7, 0.6).into());
     bullet_assets.material = material;
-    bullet_assets.collider = Collider::cuboid(
-        BULLET_SIZE / 2.0_f32,
-        BULLET_SIZE / 2.0_f32,
-        BULLET_SIZE / 2.0_f32,
-    );
+    bullet_assets.collider = Collider::ball(BULLET_SIZE / 2.0_f32);
 
     bullet_assets.flying_effect = effects.add(get_portal_effect());
     bullet_assets.hit_effect = effects.add(get_firework_effect());

@@ -45,11 +45,11 @@
 			},
 			// "env": {
 			// },
-			"problemMatcher": [
-				"$rustc",
-				// "$rustc-json",
-				"$rustc-watch",
-			],
+			// "problemMatcher": [
+			// 	"$rustc",
+			// 	// "$rustc-json",
+			// 	"$rustc-watch",
+			// ],
 			"group": {
 				"kind": "build",
 				"isDefault": false

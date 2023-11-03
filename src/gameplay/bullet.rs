@@ -2,6 +2,7 @@ use crate::gameplay::bullet_physics::{BULLET_DENSITY, BULLET_LINEAR_DAMPING, GRA
 use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
 use bevy_rapier3d::prelude::*;
+use rand::random;
 
 use crate::planet::TerrainSplitProbe;
 use crate::{game_assets::BulletAssets, gameplay::events::TankCommandEventType};
@@ -130,9 +131,7 @@ fn shoot_bullet(
             let bullet_pbr_bundle = PbrBundle {
                 mesh: bullet_assets.mesh.clone(),
                 material: bullet_assets.material.clone(),
-                transform: Transform::from_translation(spawn_pos)
-                    .with_rotation(quat)
-                    .with_scale(Vec3::ONE * 0.2),
+                transform: Transform::from_translation(spawn_pos).with_rotation(quat),
                 ..default()
             };
 
@@ -145,6 +144,12 @@ fn shoot_bullet(
             //     transform: Transform::from_translation(spawn_pos).with_rotation(quat),
             //     ..Default::default()
             // };
+
+            const SHOOT_VEL_RELATIVE_ERR: f32 = 7.0 / 3000.0;
+            let (err_x, err_y, err_z): (f32, f32, f32) = random();
+            let linear_relative_err = Vec3::new(err_x, err_y, err_z) * 2.0 - Vec3::ONE;
+            let linear_relative_err = linear_relative_err.normalize() * SHOOT_VEL_RELATIVE_ERR;
+            let linear_vel = (fwd + linear_relative_err) * tank.power * TANK_BULLET_SPEED_PER_POWER;
 
             let bullet_id = commands
                 .spawn((
@@ -163,12 +168,13 @@ fn shoot_bullet(
                     angular_damping: BULLET_LINEAR_DAMPING,
                 })
                 .insert(Velocity {
-                    linvel: fwd * tank.power * TANK_BULLET_SPEED_PER_POWER,
+                    linvel: linear_vel,
                     angvel: quat * Vec3::new(0.0, 0.0, SHOOT_ROTATION),
                 })
                 .insert(ActiveEvents::COLLISION_EVENTS)
                 .insert(Name::new("BULLET"))
                 .insert(TerrainSplitProbe)
+                .insert(Sensor)
                 .id();
 
             commands

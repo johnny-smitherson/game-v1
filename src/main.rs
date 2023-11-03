@@ -27,7 +27,6 @@ use bevy::{
 };
 
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_mod_raycast::low_latency_window_plugin;
 use bevy_rapier3d::prelude::*;
 use bevy_screen_diagnostics::{ScreenDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin};
 
@@ -43,7 +42,6 @@ fn main() {
         // ==============
         .add_plugins(
             DefaultPlugins
-                .set(low_latency_window_plugin())
                 .set(RenderPlugin { wgpu_settings })
                 .set(ImagePlugin::default_nearest())
                 .set(WindowPlugin {
@@ -56,6 +54,8 @@ fn main() {
                         fit_canvas_to_parent: true,
                         // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
                         prevent_default_event_handling: false,
+                        focused: false,
+                        position: WindowPosition::Centered(MonitorSelection::Index(1)),
                         ..default()
                     }),
                     ..default()
