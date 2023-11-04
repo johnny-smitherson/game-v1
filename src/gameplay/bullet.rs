@@ -1,3 +1,4 @@
+use crate::audio::PlaySpatialAudioEvent;
 use crate::gameplay::bullet_physics::{BULLET_DENSITY, BULLET_LINEAR_DAMPING, GRAVITY_SCALE};
 use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
@@ -5,7 +6,7 @@ use bevy_rapier3d::prelude::*;
 use rand::random;
 
 use crate::planet::TerrainSplitProbe;
-use crate::{game_assets::BulletAssets, gameplay::events::TankCommandEventType};
+use crate::{assets::BulletAssets, gameplay::events::TankCommandEventType};
 
 use super::events::BulletHitEvent;
 use super::{bullet_physics::TANK_BULLET_SPEED_PER_POWER, events::TankCommandEvent, tank::Tank};
@@ -70,6 +71,7 @@ fn on_bullet_impact(
     mut flying_effects: Query<(Entity, &mut EffectSpawner), With<BulletFlyingEffectMarker>>,
     bullet_assets: Res<BulletAssets>,
     mut events: EventWriter<BulletHitEvent>,
+    mut audio_events: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for (bullet_ent, bullet_tr, bullet_vel, bullet_children, bullet_hit, bullet) in hits.iter() {
         // send event with all data
@@ -83,9 +85,8 @@ fn on_bullet_impact(
         let tombstone_ent = commands
             .spawn((
                 BulletTombstone(Timer::new(Duration::from_secs(6), TimerMode::Once)),
-                SpatialBundle::default(),
+                SpatialBundle::from_transform(Transform::from_translation(bullet_tr.translation)),
             ))
-            .insert(Transform::from_translation(bullet_tr.translation))
             .insert(Name::new("Bullet TOMBSTONE"))
             .insert(TerrainSplitProbe)
             .id();
@@ -106,6 +107,9 @@ fn on_bullet_impact(
                 },
             ))
             .set_parent(tombstone_ent);
+        // create audio effects: far boom + closer explosion
+        audio_events.send(PlaySpatialAudioEvent::distant_boom(tombstone_ent));
+        audio_events.send(PlaySpatialAudioEvent::close_explosion(tombstone_ent));
         // finally, delete the bullet
         commands.entity(bullet_ent).despawn_recursive();
     }
@@ -116,6 +120,7 @@ fn shoot_bullet(
     tanks: Query<(Entity, &Tank)>,
     bullet_assets: Res<BulletAssets>,
     mut events: EventReader<TankCommandEvent>,
+    mut audio_events: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for event in events.iter() {
         if let Ok((tank_entity, tank)) = tanks.get(event.tank_entity) {
@@ -176,6 +181,7 @@ fn shoot_bullet(
                 .insert(TerrainSplitProbe)
                 .id();
 
+            // bullet particle effect
             commands
                 .spawn((
                     BulletFlyingEffectMarker,
@@ -185,6 +191,9 @@ fn shoot_bullet(
                     },
                 ))
                 .set_parent(bullet_id);
+
+            // tank fire audio effect
+            audio_events.send(PlaySpatialAudioEvent::canon_fire(tank_entity));
         }
     }
 }

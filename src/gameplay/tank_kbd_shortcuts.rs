@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    flying_camera::{FlyingCameraInputState, FlyingCameraPivot},
+    camera_flying::{FlyingCameraInputState, FlyingCameraPivot},
     menu::mouse_not_over_menu,
     raycast::TerrainRaycastResult,
 };

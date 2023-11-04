@@ -16,6 +16,7 @@ use bevy::{
     pbr::ScreenSpaceAmbientOcclusionBundle,
 };
 
+use crate::audio::SpatialAudioListener;
 use crate::planet::TerrainSplitProbe;
 use crate::raycast::TerrainRaycastSet;
 
@@ -165,6 +166,7 @@ fn setup_flying_camera(mut commands: Commands) {
             },
             // PickingCameraBundle::default();
             Name::new("THE CAMERA"),
+            SpatialAudioListener,
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
         .insert(TemporalAntiAliasBundle::default())

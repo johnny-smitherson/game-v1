@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 use crate::{
-    game_assets::GameSceneAssets,
+    assets::GameSceneAssets,
     gameplay::bullet_physics::{GRAVITY_MAGNITUDE, TANK_DENSITY},
     menu::mouse_not_over_menu,
     planet::TerrainSplitProbe,
@@ -268,13 +268,9 @@ fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
     let tank_collider = Collider::cuboid(collider_size, collider_size / 2.0, collider_size);
 
     let tank_controller = KinematicCharacterController {
-        // The character offset is set to 0.01.
         offset: CharacterLength::Absolute(0.01),
-        // Don’t allow climbing slopes larger than 45 degrees.
-        max_slope_climb_angle: 60.0_f32.to_radians(),
-        // Automatically slide down on slopes smaller than 30 degrees.
-        // min_slope_slide_angle: 0.0_f32.to_radians(),
-        // snap to ground 0.5
+        max_slope_climb_angle: 25.0_f32.to_radians(),
+        min_slope_slide_angle: 25.0_f32.to_radians(),
         snap_to_ground: Some(CharacterLength::Absolute(5.5)),
         ..default()
     };

@@ -1,12 +1,14 @@
-pub mod bullet;
-pub mod bullet_physics;
-pub mod events;
-pub mod tank;
-pub mod tank_kbd_shortcuts;
-pub mod tank_ui;
+mod bullet;
+mod bullet_physics;
+mod events;
+mod minimap;
+mod tank;
+mod tank_kbd_shortcuts;
+mod tank_ui;
 
 use self::bullet::BulletPlugin;
 use self::events::*;
+use self::minimap::MinimapPlugin;
 use self::tank::TankPlugin;
 use self::tank_kbd_shortcuts::KeyboardShortcutsPlugin;
 use self::tank_ui::TankUiPlugin;
@@ -20,6 +22,7 @@ impl Plugin for GameplayPlugin {
             .add_plugins(TankPlugin)
             .add_plugins(BulletPlugin)
             .add_plugins(KeyboardShortcutsPlugin)
-            .add_plugins(TankUiPlugin);
+            .add_plugins(TankUiPlugin)
+            .add_plugins(MinimapPlugin);
     }
 }

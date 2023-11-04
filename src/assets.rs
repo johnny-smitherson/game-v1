@@ -6,6 +6,22 @@ use bevy_hanabi::prelude::*;
 use bevy_inspector_egui::prelude::InspectorOptions;
 use bevy_rapier3d::prelude::*;
 
+pub struct GameAssetsPlugin;
+impl Plugin for GameAssetsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(HanabiPlugin)
+            .init_resource::<BulletAssets>()
+            .register_type::<BulletAssets>()
+            .init_resource::<GameSceneAssets>()
+            .register_type::<GameSceneAssets>()
+
+            .add_systems(
+                PreStartup,
+                (setup_bullet_assets, load_glb_scenes),
+            );
+    }
+}
+
 #[derive(Reflect, Resource, Default, InspectorOptions)]
 #[reflect(Resource)]
 pub struct BulletAssets {
@@ -47,18 +63,6 @@ fn load_glb_scenes(mut scene_assets: ResMut<GameSceneAssets>, ass: Res<AssetServ
 
             scene_assets.scenes.insert(key, my_gltf);
         }
-    }
-}
-
-pub struct GameAssetsPlugin;
-impl Plugin for GameAssetsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(HanabiPlugin)
-            .init_resource::<BulletAssets>()
-            .register_type::<BulletAssets>()
-            .init_resource::<GameSceneAssets>()
-            .register_type::<GameSceneAssets>()
-            .add_systems(PreStartup, (setup_bullet_assets, load_glb_scenes));
     }
 }
 

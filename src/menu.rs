@@ -12,14 +12,7 @@ impl Plugin for MenuPlugin {
         app.add_plugins(EguiPlugin)
             .init_resource::<UiMenuState>()
             .register_type::<UiMenuState>()
-            .add_systems(
-                Update,
-                (
-                    egui_ui_system,
-                    cursor_grab_click.run_if(mouse_not_over_menu),
-                )
-                    .chain(),
-            );
+            .add_systems(Update, (egui_ui_system, cursor_grab_click).chain());
     }
 }
 

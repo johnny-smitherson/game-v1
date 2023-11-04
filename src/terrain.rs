@@ -5,7 +5,7 @@ use noise::{Billow, NoiseFn, Perlin};
 use smart_default::SmartDefault;
 
 pub const NOISE_SEED: f32 = 0.0;
-pub const MOUNTAIN_HEIGHT: f32 = 1000.0;
+pub const MOUNTAIN_HEIGHT: f32 = 1500.0;
 pub const PLANET_RADIUS: f32 = 100000.0;
 
 pub const NOISE_BASE_FREQ: f32 = 10000.0;

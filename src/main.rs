@@ -1,5 +1,7 @@
-mod flying_camera;
-mod game_assets;
+mod assets;
+mod audio;
+mod camera_extra;
+mod camera_flying;
 mod gameplay;
 mod menu;
 mod piramida;
@@ -10,8 +12,8 @@ mod triangle;
 
 use std::time::Duration;
 
-use flying_camera::FlyingCameraPlugin;
-use game_assets::GameAssetsPlugin;
+use assets::GameAssetsPlugin;
+use camera_flying::FlyingCameraPlugin;
 use gameplay::GameplayPlugin;
 use menu::MenuPlugin;
 use planet::PlanetPlugin;
@@ -29,6 +31,8 @@ use bevy::{
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_rapier3d::prelude::*;
 use bevy_screen_diagnostics::{ScreenDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin};
+
+use crate::audio::GameAudioPlugin;
 
 fn main() {
     let mut wgpu_settings = WgpuSettings::default();
@@ -84,6 +88,8 @@ fn main() {
         // ==============
         .add_plugins(MenuPlugin)
         .add_plugins(FlyingCameraPlugin)
+        .add_plugins(camera_extra::ExtraCameraPlugin)
+        .add_plugins(GameAudioPlugin)
         .add_plugins(PlanetPlugin)
         .add_plugins(GameAssetsPlugin)
         .add_plugins(GameplayPlugin)

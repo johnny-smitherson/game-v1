@@ -3,6 +3,7 @@
 - [x] tank controlller
 - [x] tank shooting
 - [x] bunch of tanks
+- [ ] minimap UI camera
 - [ ] bullet kills tanks
 - [ ] death explosion effect
 - [ ] player tank moves to right click
