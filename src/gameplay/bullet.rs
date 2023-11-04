@@ -174,7 +174,6 @@ fn shoot_bullet(
                 .insert(ActiveEvents::COLLISION_EVENTS)
                 .insert(Name::new("BULLET"))
                 .insert(TerrainSplitProbe)
-                .insert(Sensor)
                 .id();
 
             commands

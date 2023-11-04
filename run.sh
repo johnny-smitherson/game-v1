@@ -1,1 +1,2 @@
-bacon run
+# bacon run
+cargo build

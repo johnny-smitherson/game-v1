@@ -3,6 +3,8 @@
 
 use bevy::prelude::*;
 
+use crate::menu::{egui_ui_system, mouse_is_over_menu, UiMarkHoverBundle, UiMarkMouseOverMenu};
+
 use super::events::{TankCommandEvent, TankCommandEventType};
 use super::tank::{PlayerControlledTank, Tank};
 
@@ -10,17 +12,20 @@ pub struct TankUiPlugin;
 impl Plugin for TankUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_tank_control_ui)
-            .add_systems(PreUpdate, send_events_button_press)
-            .add_systems(PostUpdate, update_labels);
+            .add_systems(
+                PreUpdate,
+                (send_events_button_press
+                    .after(egui_ui_system)
+                    .run_if(mouse_is_over_menu),)
+                    .chain(),
+            )
+            .add_systems(PostUpdate, (update_labels,));
     }
 }
 
 pub fn spawn_tank_control_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     build_tank_control_ui(&mut commands, &asset_server);
 }
-
-#[derive(Component)]
-struct TankUIRoot;
 
 #[derive(Component)]
 enum TankUIButton {
@@ -35,17 +40,22 @@ enum TankUIButton {
 
 fn send_events_button_press(
     mut interaction_query: Query<
-        (&Interaction, &TankUIButton, Changed<Interaction>),
+        (
+            &Interaction,
+            &mut BorderColor,
+            &TankUIButton,
+            Changed<Interaction>,
+        ),
         (With<Button>, With<TankUIButton>),
     >,
     mut event_writer: EventWriter<TankCommandEvent>,
     tank_query: Query<Entity, With<PlayerControlledTank>>,
 ) {
     if let Ok(tank_entity) = tank_query.get_single() {
-        for (interaction, button, changed) in &mut interaction_query {
+        for (interaction, mut border_color, button_tag, changed) in &mut interaction_query {
             match *interaction {
                 Interaction::Pressed => {
-                    let event_type = match button {
+                    let event_type = match button_tag {
                         TankUIButton::ElevationMinus => TankCommandEventType::ElevationMinus,
                         TankUIButton::ElevationPlus => TankCommandEventType::ElevationPlus,
                         TankUIButton::PowerPlus => TankCommandEventType::PowerPlus,
@@ -61,9 +71,15 @@ fn send_events_button_press(
                             tank_entity,
                         });
                     }
+
+                    border_color.0 = Color::RED;
                 }
-                Interaction::Hovered => {}
-                Interaction::None => {}
+                Interaction::Hovered => {
+                    border_color.0 = Color::WHITE;
+                }
+                Interaction::None => {
+                    border_color.0 = Color::WHITE;
+                }
             }
         }
     }
@@ -130,7 +146,7 @@ pub fn build_tank_control_ui(commands: &mut Commands, asset_server: &Res<AssetSe
 
     // FIRE BUTTON
     let color = Color::rgba(0.9, 0.9, 0.9, 0.9);
-    let button_style = ButtonBundle {
+    let button_bundle = ButtonBundle {
         style: Style {
             width: Val::Percent(95.0),
             height: Val::Percent(95.0),
@@ -177,10 +193,14 @@ pub fn build_tank_control_ui(commands: &mut Commands, asset_server: &Res<AssetSe
             ))
             .with_children(|row| {
                 // === FIRE ===
-                row.spawn((button_style.clone(), TankUIButton::Fire))
-                    .with_children(|parent| {
-                        parent.spawn(TextBundle::from_section("FIRE", text_style.clone()));
-                    });
+                row.spawn((
+                    button_bundle.clone(),
+                    TankUIButton::Fire,
+                    UiMarkMouseOverMenu,
+                ))
+                .with_children(|parent| {
+                    parent.spawn(TextBundle::from_section("FIRE", text_style.clone()));
+                });
             });
     });
 
@@ -243,6 +263,7 @@ fn build_tank_control_row(
                         .into(),
                         ..default()
                     },
+                    UiMarkHoverBundle::default(),
                     // Comp for whole row?,
                 ))
                 .with_children(|row| {
@@ -278,16 +299,17 @@ fn build_tank_control_row(
                                 TextBundle::from_section("666", text_style.clone()),
                             ));
                         });
-                    // === Plus Button ===
-                    row.spawn((button_style.clone(), comp_plus))
-                        .with_children(|parent| {
-                            parent.spawn(TextBundle::from_section("+", text_style.clone()));
-                        });
-
                     // === Minus Button ===
                     row.spawn((button_style.clone(), comp_minus))
+                        .insert(UiMarkMouseOverMenu)
                         .with_children(|parent| {
                             parent.spawn(TextBundle::from_section("-", text_style.clone()));
+                        });
+                    // === Plus Button ===
+                    row.spawn((button_style.clone(), comp_plus))
+                        .insert(UiMarkMouseOverMenu)
+                        .with_children(|parent| {
+                            parent.spawn(TextBundle::from_section("+", text_style.clone()));
                         });
                 });
         })
@@ -313,7 +335,7 @@ fn build_tank_control_root(commands: &mut Commands) -> Entity {
                 },
                 ..default()
             },
-            TankUIRoot,
+            UiMarkHoverBundle::default(),
         ))
         .id()
 }

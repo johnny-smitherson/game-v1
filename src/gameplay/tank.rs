@@ -4,6 +4,7 @@ use bevy_rapier3d::prelude::*;
 use crate::{
     game_assets::GameSceneAssets,
     gameplay::bullet_physics::{GRAVITY_MAGNITUDE, TANK_DENSITY},
+    menu::mouse_not_over_menu,
     planet::TerrainSplitProbe,
     terrain::{apply_height, height},
 };
@@ -30,7 +31,7 @@ impl Plugin for TankPlugin {
             .add_systems(
                 Update,
                 (
-                    control_tank_aim,
+                    control_tank_aim.run_if(mouse_not_over_menu),
                     debug_show_tank_aim,
                     (control_tank_mvmt, tank_gravity_update).chain(),
                 ),
@@ -231,12 +232,12 @@ fn control_tank_mvmt(
         tank_controller.translation = Some(-tank_transform.right() * _delta_adv);
 
         const GIZMO_FIRE_LEN: f32 = 10.0;
-        const GIZMO_EMPTY_RADIUS: f32 = 5.0;
+        const GIZMO_EMPTY_RADIUS: f32 = 4.0;
         tank_data.fire_direction = Quat::from_rotation_y(tank_data.bearing) * Vec3::Z;
         tank_data.fire_direction =
             (tank_data.fire_direction * elevation.cos() + Vec3::Y * elevation.sin()).normalize();
 
-        let gizmo_origin = tank_transform.translation;
+        let gizmo_origin = tank_transform.translation + Vec3::Y * GIZMO_EMPTY_RADIUS;
         let gizmo_fire_src = gizmo_origin + tank_data.fire_direction * GIZMO_EMPTY_RADIUS;
         let gizmo_fire_end =
             gizmo_origin + tank_data.fire_direction * (GIZMO_FIRE_LEN + GIZMO_EMPTY_RADIUS);
@@ -263,7 +264,7 @@ fn rand_vec3(max_abs: f32) -> Vec3 {
 }
 
 fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
-    let collider_size: f32 = 0.5;
+    let collider_size: f32 = 1.0;
     let tank_collider = Collider::cuboid(collider_size, collider_size / 2.0, collider_size);
 
     let tank_controller = KinematicCharacterController {
@@ -284,11 +285,23 @@ fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
         .expect("KEY NOT FOUND");
 
     const TANK_SPAWN_COUNT: i32 = 12;
-    const TANK_SPAWN_POS_SPREAD: f32 = 2000.0;
+    const TANK_SPAWN_POS_MAX_SPREAD: f32 = 4000.0;
+    const TANK_SPAWN_POS_MIN_SPREAD: f32 = 400.0;
+    let mut added_positions: Vec<Vec3> = vec![];
 
     for i in 0..TANK_SPAWN_COUNT {
-        let tank_spawn_pos = rand_vec3(TANK_SPAWN_POS_SPREAD);
-        let tank_spawn_pos = apply_height(&tank_spawn_pos) + Vec3::Y * (collider_size + 5.0);
+        let get_pos = || {
+            apply_height(&rand_vec3(TANK_SPAWN_POS_MAX_SPREAD)) + Vec3::Y * (collider_size + 1.0)
+        };
+        let mut tank_spawn_pos = get_pos();
+        while !added_positions.is_empty()
+            && added_positions
+                .iter()
+                .any(|other| other.distance(tank_spawn_pos) < TANK_SPAWN_POS_MIN_SPREAD)
+        {
+            tank_spawn_pos = get_pos();
+        }
+        added_positions.push(tank_spawn_pos);
 
         let tank_model = SceneBundle {
             scene: tank_model_scene.clone(),
@@ -311,7 +324,7 @@ fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
         commands
             .spawn((tank_model, Name::new("Tank Model")))
             .insert(
-                Transform::from_translation(Vec3::Y * -0.25_f32).with_scale(Vec3::ONE * 0.125_f32),
+                Transform::from_translation(Vec3::Y * -0.25_f32).with_scale(Vec3::ONE * 0.25_f32),
             )
             .set_parent(tank_id); //.insert(Transform::from_scale(Vec3::ONE * 0.25));
 

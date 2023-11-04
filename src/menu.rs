@@ -3,7 +3,34 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 
 use super::terrain::TerrainSettings;
+use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy_inspector_egui::prelude::InspectorOptions;
+
+pub struct MenuPlugin;
+impl Plugin for MenuPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(EguiPlugin)
+            .init_resource::<UiMenuState>()
+            .register_type::<UiMenuState>()
+            .add_systems(
+                Update,
+                (
+                    egui_ui_system,
+                    cursor_grab_click.run_if(mouse_not_over_menu),
+                )
+                    .chain(),
+            );
+    }
+}
+
+#[derive(Component, Default, Debug)]
+pub struct UiMarkMouseOverMenu;
+
+#[derive(Bundle, Default, Debug)]
+pub struct UiMarkHoverBundle {
+    marker: UiMarkMouseOverMenu,
+    interaction: Interaction,
+}
 
 #[derive(Reflect, Resource, Default, InspectorOptions)]
 #[reflect(Resource)]
@@ -14,11 +41,15 @@ pub struct UiMenuState {
     pub triangle_count: f32,
     pub mesh_count: f32,
     pub tri_compute_ms: f32,
-    pub ui_prevent_input: bool,
+    pub mouse_over_menu: bool,
     pub is_mouse_captured: bool,
 }
 
-pub fn egui_ui_system(mut egui_context: EguiContexts, mut ui_state: ResMut<UiMenuState>) {
+pub fn egui_ui_system(
+    mut egui_context: EguiContexts,
+    mut ui_state: ResMut<UiMenuState>,
+    interaction_query: Query<&Interaction, With<UiMarkMouseOverMenu>>,
+) {
     egui::Window::new("Piramidă").show(egui_context.ctx_mut(), |ui| {
         ui.label(
             "  Triangles: ".to_string()
@@ -28,7 +59,7 @@ pub fn egui_ui_system(mut egui_context: EguiContexts, mut ui_state: ResMut<UiMen
                 + " COMPUTE MS: "
                 + ui_state.tri_compute_ms.to_string().as_str(),
         );
-        ui.label(" PREVENT INPUT: ".to_string() + ui_state.ui_prevent_input.to_string().as_str());
+        ui.label(" MOUSE OVER MENU: ".to_string() + ui_state.mouse_over_menu.to_string().as_str());
         ui.label("Planet Settings");
 
         ui.add(
@@ -64,27 +95,21 @@ pub fn egui_ui_system(mut egui_context: EguiContexts, mut ui_state: ResMut<UiMen
         );
         ui.checkbox(&mut ui_state.enable_animation, "ENABLE ADNIMATION");
     });
-    ui_state.ui_prevent_input = egui_context.ctx_mut().is_pointer_over_area();
+    ui_state.mouse_over_menu = egui_context.ctx_mut().is_pointer_over_area()
+        || interaction_query
+            .iter()
+            .any(|interaction| match *interaction {
+                Interaction::Hovered | Interaction::Pressed => true,
+                Interaction::None => false,
+            });
 }
 
-pub fn allow_player_input(ui_state: Res<UiMenuState>) -> bool {
-    !ui_state.ui_prevent_input
+pub fn mouse_not_over_menu(ui_state: Res<UiMenuState>) -> bool {
+    !ui_state.mouse_over_menu
 }
-
-pub struct MenuPlugin;
-impl Plugin for MenuPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(EguiPlugin)
-            .init_resource::<UiMenuState>()
-            .register_type::<UiMenuState>()
-            .add_systems(
-                Update,
-                (egui_ui_system, cursor_grab_click.run_if(allow_player_input)).chain(),
-            );
-    }
+pub fn mouse_is_over_menu(ui_state: Res<UiMenuState>) -> bool {
+    ui_state.mouse_over_menu
 }
-
-use bevy::window::{CursorGrabMode, PrimaryWindow};
 
 fn cursor_grab_click(
     mouse: Res<Input<MouseButton>>,

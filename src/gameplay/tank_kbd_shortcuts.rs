@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     flying_camera::{FlyingCameraInputState, FlyingCameraPivot},
+    menu::mouse_not_over_menu,
     raycast::TerrainRaycastResult,
 };
 
@@ -14,7 +15,13 @@ pub struct KeyboardShortcutsPlugin;
 impl Plugin for KeyboardShortcutsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreUpdate, (read_keys_for_player_tank_control,))
-            .add_systems(Update, (center_camera_on_player_tank, aim_tank_on_click));
+            .add_systems(
+                Update,
+                (
+                    center_camera_on_player_tank,
+                    aim_tank_on_click.run_if(mouse_not_over_menu),
+                ),
+            );
     }
 }
 
@@ -64,8 +71,10 @@ fn read_keys_for_player_tank_control(
                 KeyCode::Numpad2 => TankCommandEventType::MoveBack,
                 KeyCode::Numpad4 => TankCommandEventType::MoveLeft,
                 KeyCode::Numpad6 => TankCommandEventType::MoveRight,
-                KeyCode::ShiftRight => TankCommandEventType::PowerPlus,
-                KeyCode::ControlRight => TankCommandEventType::PowerMinus,
+                KeyCode::ShiftRight | KeyCode::Plus | KeyCode::Equals => {
+                    TankCommandEventType::PowerPlus
+                }
+                KeyCode::ControlRight | KeyCode::Minus => TankCommandEventType::PowerMinus,
                 _ => continue,
             };
             tank_command_events.send(TankCommandEvent {
