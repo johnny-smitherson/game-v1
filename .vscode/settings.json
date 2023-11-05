@@ -4,7 +4,7 @@
     },
     "files.eol": "\n",
     "files.autoSave": "afterDelay",
-    "files.autoSaveDelay": 666,
+    "files.autoSaveDelay": 2345,
 
     "rust-analyzer.check.command": "clippy",
     "rust-analyzer.check.extraArgs": [
@@ -17,7 +17,7 @@
     },
 
 
-    "triggerTaskOnSave.on": true,
+    "triggerTaskOnSave.on": false,
     "triggerTaskOnSave.delay": 666,
     "triggerTaskOnSave.showNotifications": false,
     "triggerTaskOnSave.showStatusBarToggle": false,

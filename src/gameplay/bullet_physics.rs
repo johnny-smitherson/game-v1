@@ -1,7 +1,7 @@
 use bevy::prelude::{Reflect, Vec2};
 use std::{cmp::Ordering, f32::consts::PI};
 
-pub const TANK_BULLET_SPEED_PER_POWER: f32 = 0.25;
+pub const TANK_BULLET_SPEED_PER_POWER: f32 = 0.28;
 pub const GRAVITY_SCALE: f32 = 1.0;
 pub const GRAVITY_MAGNITUDE: f32 = 9.81;
 pub const BULLET_DENSITY: f32 = 100.0;

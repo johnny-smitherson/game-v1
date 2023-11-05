@@ -154,7 +154,7 @@ fn control_tank_mvmt(
     mut tank_command_events: EventReader<TankCommandEvent>,
     time: Res<Time>,
     mut gizmos: Gizmos,
-    mut gizmo_config: ResMut<GizmoConfig>,
+    // mut gizmo_config: ResMut<GizmoConfig>,
 ) {
     // event reader remembers what it iterated through, so let's clone it
     let events: Vec<_> = tank_command_events.iter().collect();
@@ -247,7 +247,7 @@ fn control_tank_mvmt(
 
         gizmos.line(gizmo_fire_src, gizmo_fire_end, Color::RED);
         gizmos.line(gizmo_blue_proj_src, gizmo_blue_proj_end, Color::BLUE);
-        gizmo_config.line_width = 7.0;
+        // gizmo_config.line_width = 7.0;
     }
 }
 

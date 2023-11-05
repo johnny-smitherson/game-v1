@@ -6,6 +6,7 @@ use bevy::{
         render_resource::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
+        view::RenderLayers,
         // view::RenderLayers,
     },
 };
@@ -86,16 +87,19 @@ pub fn spawn_extra_camera(
             // render before the "main pass" camera
             order: -1,
             target: RenderTarget::Image(image_handle.clone()),
+
             ..default()
         },
         projection: Projection::Perspective(PerspectiveProjection {
             near: 0.1,
             far: 100000.0,
+            fov: (90.0 / 360.0) * (std::f32::consts::PI * 2.0),
             ..default()
         }),
         tonemapping: Tonemapping::BlenderFilmic,
         transform: Transform::from_translation(Vec3::new(0.0, 2000.0, 0.0))
             .looking_at(Vec3::ZERO, Vec3::Z),
+
         ..default()
     };
 
@@ -104,5 +108,9 @@ pub fn spawn_extra_camera(
         rez,
     };
 
-    commands.spawn(camera).insert(minimap).insert(extra_comp);
+    commands
+        .spawn(camera)
+        .insert(minimap)
+        .insert(extra_comp)
+        .insert(RenderLayers::from_layers(&[0, 1]));
 }

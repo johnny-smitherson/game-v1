@@ -1,0 +1,59 @@
+name: Rust
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Check formatting
+        run: cargo fmt -- --check
+  test:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: sudo apt update && sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
+      - name: Clippy for bevy_rapier2d
+        run: cargo clippy --verbose -p bevy_rapier2d
+      - name: Clippy for bevy_rapier3d
+        run: cargo clippy --verbose -p bevy_rapier3d
+      - name: Clippy for bevy_rapier2d (debug-render, simd, serde)
+        run: cargo clippy --verbose -p bevy_rapier2d --features debug-render-2d,simd-stable,serde-serialize
+      - name: Clippy for bevy_rapier3d (debug-render, simd, serde)
+        run: cargo clippy --verbose -p bevy_rapier3d --features debug-render-3d,simd-stable,serde-serialize
+      - name: Test for bevy_rapier2d
+        run: cargo test --verbose -p bevy_rapier2d
+      - name: Test for bevy_rapier3d
+        run: cargo test --verbose -p bevy_rapier3d
+  test-wasm:
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy bevy_rapier2d
+        run: cd bevy_rapier2d && cargo clippy --verbose --features wasm-bindgen,bevy/webgl2 --target wasm32-unknown-unknown
+      - name: Clippy bevy_rapier3d
+        run: cd bevy_rapier3d && cargo clippy --verbose --features wasm-bindgen,bevy/webgl2 --target wasm32-unknown-unknown

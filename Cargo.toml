@@ -9,16 +9,16 @@ edition = "2021"
 wasm = []
 
 [dependencies]
-bevy = { version = "0.11.3", features = [
+bevy = { version = "0.12.0", features = [
     "tonemapping_luts",  
     "bevy_gltf",
     "jpeg", "png",
-    "filesystem_watcher",
     "dynamic_linking",
 ] }
 bevy-inspector-egui = "0.20"
 bevy_egui = "0.22.0"
-bevy_rapier3d = { version = "0.22", features = [ "simd-stable", "debug-render-3d" ] }
+# bevy_rapier3d = { version = "0.22", features = [ "simd-stable", "debug-render-3d" ] }
+bevy_rapier3d = { path = "./lib/bevy_rapier-bevy-0.12/bevy_rapier3d", features = [ "simd-stable", "debug-render-3d" ] }
 bevy_hanabi = "0.7"
 bevy_screen_diagnostics = "0.3"
 bevy_atmosphere = "0.7"
