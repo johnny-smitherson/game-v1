@@ -1864,21 +1864,10 @@ dependencies = [
  "bevy_mod_raycast",
  "bevy_rapier3d",
  "bevy_screen_diagnostics",
- "game_terrain",
  "rand",
  "rayon",
- "smart-default",
-]
-
-[[package]]
-name = "game_logic"
-version = "0.1.0"
-
-[[package]]
-name = "game_terrain"
-version = "0.1.0"
-dependencies = [
  "simdnoise",
+ "smart-default",
 ]
 
 [[package]]
@@ -2068,10 +2057,6 @@ checksum = "6bf0b36e6f090b7e1d8a4b49c0cb81c1f8376f72198c65dd3ad9ff3556b8b78c"
 dependencies = [
  "bitflags 2.4.1",
 ]
-
-[[package]]
-name = "graphics_base"
-version = "0.1.0"
 
 [[package]]
 name = "grid"
