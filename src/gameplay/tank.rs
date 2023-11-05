@@ -366,15 +366,15 @@ fn read_tank_gravity_result(
 }
 
 fn tank_fix_above_terrain(mut transforms: Query<&mut Transform, With<TankGravity>>) {
-    for transform in transforms.iter_mut() {
+    for mut transform in transforms.iter_mut() {
         const RESET_BELOW: f32 = 5.0;
-        let terrain_height = height(&Vec3::ZERO);
+        let terrain_height = height(&transform.translation);
         if transform.translation.y < terrain_height - RESET_BELOW {
             warn!(
                 "SHIT FELL UNDER TERRAIN: height={}  Y={}",
                 terrain_height, transform.translation.y
             );
-            // transform.translation.y = terrain_height + RESET_BELOW * 3.;
+            transform.translation.y = terrain_height + RESET_BELOW * 3.;
         }
     }
 }

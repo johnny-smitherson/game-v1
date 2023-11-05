@@ -12,6 +12,7 @@ impl Plugin for GameAudioPlugin {
         app.init_resource::<GameAudioAssets>()
             .register_type::<GameAudioAssets>()
             .add_event::<PlaySpatialAudioEvent>()
+            .insert_resource(GlobalVolume::new(0.2))
             .add_systems(PreStartup, load_audio_folders)
             .add_systems(
                 Last,
@@ -60,9 +61,9 @@ impl PlaySpatialAudioEvent {
             asset_key: "explosion/canon_fire".to_string(),
             randomize: false,
             attach_to_parent: false,
-            sound_reach: 700.0,
+            sound_reach: 900.0,
             playback_speed: Self::rand_speed(),
-            playback_volume: 0.6,
+            playback_volume: 0.3,
         }
     }
     pub fn distant_boom(parent_ent: Entity) -> Self {
@@ -71,9 +72,9 @@ impl PlaySpatialAudioEvent {
             asset_key: "explosion/distant_boom".to_string(),
             randomize: true,
             attach_to_parent: false,
-            sound_reach: 1500.0,
+            sound_reach: 1800.0,
             playback_speed: Self::rand_speed(),
-            playback_volume: 0.8,
+            playback_volume: 0.6,
         }
     }
     pub fn close_explosion(parent_ent: Entity) -> Self {
@@ -84,7 +85,7 @@ impl PlaySpatialAudioEvent {
             attach_to_parent: false,
             sound_reach: 100.0,
             playback_speed: Self::rand_speed(),
-            playback_volume: 0.7,
+            playback_volume: 0.5,
         }
     }
 }

@@ -395,7 +395,6 @@ impl Triangle {
         }
         if self.level >= settings.MAX_SPLIT_LEVEL
             || self.data.min_edge_len < settings.MIN_TRIANGLE_EDGE_SIZE
-            || self.data.max_edge_len / self.data.min_edge_len > 2.0
         {
             false
         } else {
