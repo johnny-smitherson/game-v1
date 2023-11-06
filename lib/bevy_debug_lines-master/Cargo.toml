@@ -1,0 +1,76 @@
+[package]
+authors = ["Michael Palmos <toqoz@hotmail.com>"]
+categories = ["game-engines", "rendering", "game-development"]
+description = "A prototype plugin providing a simple line drawing API for bevy."
+edition = "2021"
+homepage = "https://github.com/Toqozz/bevy_debug_lines"
+keywords = ["debug", "line", "graphics", "bevy", "drawing"]
+license = "MIT"
+name = "bevy_prototype_debug_lines"
+repository = "https://github.com/Toqozz/bevy_debug_lines"
+version = "0.11.1"
+
+exclude = ["demo.gif", "demo_2.png", "demo_2.webm"]
+
+[dependencies]
+bevy = { version = "0.11.3", default-features = false, features = [ "bevy_core_pipeline", "bevy_render", "bevy_pbr", "bevy_sprite", "bevy_asset" ] }
+
+[features]
+default = ["shapes"]
+example_deps_2d = [
+    "bevy/bevy_winit",
+    "bevy/bevy_gltf",
+    "bevy/png",
+    "bevy/x11",
+]
+example_deps = [
+    "bevy/bevy_winit",
+    "bevy/bevy_gltf",
+    "bevy/x11",
+    "bevy/tonemapping_luts",
+    "bevy/ktx2",
+    "bevy/zstd",
+    "3d",
+]
+3d = []
+shapes = []
+
+[[example]]
+name = "3d"
+required-features = ["example_deps"]
+
+[[example]]
+name = "2d"
+required-features = ["example_deps_2d"]
+
+[[example]]
+name = "bench"
+required-features = ["example_deps"]
+
+[[example]]
+name = "depth_test"
+required-features = ["example_deps"]
+
+[[example]]
+name = "movement"
+required-features = ["example_deps"]
+
+[[example]]
+name = "shapes_2d"
+required-features = ["shapes", "example_deps_2d"]
+
+[[example]]
+name = "shapes_3d"
+required-features = ["shapes", "example_deps"]
+
+[[example]]
+name = "shapes_bench"
+required-features = ["shapes", "example_deps"]
+
+[[example]]
+name = "sprite"
+required-features = ["example_deps_2d"]
+
+[[example]]
+name = "toggle_rendering"
+required-features = ["example_deps"]
