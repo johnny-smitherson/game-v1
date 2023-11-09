@@ -50,7 +50,5 @@
     },
     "workbench.colorCustomizations": {},
     "rust-analyzer.linkedProjects": [
-        ".\\lib\\game_terrain\\Cargo.toml",
-        ".\\lib\\game_logic\\Cargo.toml"
     ]
 }  

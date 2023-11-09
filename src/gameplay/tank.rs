@@ -99,17 +99,32 @@ fn control_tank_aim(
         }
     }
 }
-
+use bevy_prototype_debug_lines::DebugLines;
+fn debug_line_strip(
+    lines: &mut ResMut<DebugLines>,
+    gizmos: &mut Gizmos,
+    trajectory: &[Vec3],
+    color: &Color,
+) {
+    for i in 0..trajectory.len() - 1 {
+        let point_a = trajectory[i];
+        let point_b = trajectory[i + 1];
+        lines.line_colored(point_a, point_b, 0.0, *color);
+        gizmos.line(point_a, point_b, *color);
+    }
+}
 fn debug_show_tank_aim(
     tanks: Query<(&Transform, &Tank), With<PlayerControlledTank>>,
     mut gizmos: Gizmos,
+    mut lines: ResMut<DebugLines>,
 ) {
     let mut draw_trajectory = |traj: &Vec<Vec2>, pos, bearing: f32, color| {
         let traj_3d: Vec<Vec3> = traj
             .iter()
             .map(|v2| Vec3::new(v2.x * bearing.sin(), v2.y, v2.x * bearing.cos()) + pos)
             .collect();
-        gizmos.linestrip(traj_3d, color);
+        // gizmos.linestrip(traj_3d, color);
+        debug_line_strip(&mut lines, &mut gizmos, &traj_3d, &color);
     };
     for (_tank_tr, tank) in tanks.iter() {
         let tank_pos = tank.fire_origin; // tank_tr.translation;
@@ -281,8 +296,8 @@ fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
         .expect("KEY NOT FOUND");
 
     const TANK_SPAWN_COUNT: i32 = 12;
-    const TANK_SPAWN_POS_MAX_SPREAD: f32 = 4000.0;
-    const TANK_SPAWN_POS_MIN_SPREAD: f32 = 400.0;
+    const TANK_SPAWN_POS_MAX_SPREAD: f32 = 6000.0;
+    const TANK_SPAWN_POS_MIN_SPREAD: f32 = 2000.0;
     let mut added_positions: Vec<Vec3> = vec![];
 
     for i in 0..TANK_SPAWN_COUNT {

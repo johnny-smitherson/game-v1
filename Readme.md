@@ -8,8 +8,16 @@
 - [ ] death explosion effect
 - [ ] player tank moves to right click
 - [ ] AI contorolled tank - shoot closest, move randomly
+- [ ] multiplayer https://johanhelsing.studio/posts/extreme-bevy
 
 
+
+# TODO - non-trivial
+- [ ] upgrade bevy 0.12
+  - audio system rewrite - 
+  - bevy-hanabi update
+  - physics libs update
+  - 
 
 # TODO - WASM WEBGL INCOMPATIBLE CRATES
 

@@ -9,23 +9,25 @@ edition = "2021"
 wasm = []
 
 [dependencies]
-bevy = { version = "0.12.0", features = [
+bevy = { version = "0.11.3", features = [
     "tonemapping_luts",  
     "bevy_gltf",
     "jpeg", "png",
     "dynamic_linking",
+    "bevy_sprite", "bevy_asset",
+     "bevy_core_pipeline", "bevy_render", "bevy_pbr",
 ] }
 bevy-inspector-egui = "0.20"
 bevy_egui = "0.22.0"
-# bevy_rapier3d = { version = "0.22", features = [ "simd-stable", "debug-render-3d" ] }
-bevy_rapier3d = { path = "./lib/bevy_rapier-bevy-0.12/bevy_rapier3d", features = [ "simd-stable", "debug-render-3d" ] }
+bevy_rapier3d = { version = "0.22", features = [ "simd-stable", "debug-render-3d" ] }
 bevy_hanabi = "0.7"
 bevy_screen_diagnostics = "0.3"
 bevy_atmosphere = "0.7"
 smart-default = "0.7.1"
 bevy_mod_raycast = "0.14.1"
 # bevy-rust-gpu = { git = "https://github.com/Bevy-Rust-GPU/bevy-rust-gpu", tag = "v0.5.0" }
-
+bevy_prototype_debug_lines = {path="./lib/bevy_debug_lines-master"}
+# bevy_prototype_debug_lines = {path="./lib/bevy_debug_lines-0281c92551fc129321bc28789e9f59a4047ebea4"}
 simdnoise = "3.1.6"
 # noise = "0.8.2"
 rand = "0.8.5"

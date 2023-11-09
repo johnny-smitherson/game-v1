@@ -28,11 +28,11 @@ use bevy::{
     winit::WinitSettings,
 };
 
+use crate::audio::GameAudioPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_prototype_debug_lines::DebugLinesPlugin;
 use bevy_rapier3d::prelude::*;
 use bevy_screen_diagnostics::{ScreenDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin};
-
-use crate::audio::GameAudioPlugin;
 
 fn main() {
     let mut wgpu_settings = WgpuSettings::default();
@@ -81,6 +81,10 @@ fn main() {
         // ==============
         // PHYSICS AND SHIT
         // ==============
+        .add_plugins(DebugLinesPlugin {
+            depth_test: true,
+            render_layers: vec![0, 1, 2],
+        })
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         // .add_plugins(RapierDebugRenderPlugin::default())
         // ==============

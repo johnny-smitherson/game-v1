@@ -38,7 +38,7 @@ fn setup_minimap_camera(
 
     gizmo_config.line_width = 5.0;
     gizmo_config.enabled = true;
-    gizmo_config.render_layers = RenderLayers::layer(1);
+    // gizmo_config.render_layers = RenderLayers::layer(1);
 }
 
 fn setup_minimap_ui(mut commands: Commands, camera_q: Query<&ExtraCamera, With<MinimapCamera>>) {
@@ -80,12 +80,15 @@ fn update_minimap_position(
         return;
     };
 
-    let tank_positions: Vec<_> = tanks.iter().map(|(t, _)| t.translation).collect();
-    if tank_positions.is_empty() {
+    let mut item_pos: Vec<_> = tanks.iter().map(|(t, _)| t.translation).collect();
+    for tr in flying_camera_q.iter() {
+        item_pos.push(tr.compute_transform().translation);
+    }
+    if item_pos.is_empty() {
         return;
     }
-    let center_position = tank_positions.iter().sum::<Vec3>() / tank_positions.len() as f32;
-    let (min_pos, max_pos) = bbox_from_points(&tank_positions);
+    let center_position = item_pos.iter().sum::<Vec3>() / item_pos.len() as f32;
+    let (min_pos, max_pos) = bbox_from_points(&item_pos);
     let spread = (max_pos - min_pos + Vec3::ONE * 100.0).length() / 2.0 + MOUNTAIN_HEIGHT;
     const SPREAD_MULTIPLIER: f32 = 1.5;
 
