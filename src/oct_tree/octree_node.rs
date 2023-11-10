@@ -99,7 +99,7 @@ impl OctreeNode {
         }
 
         if self.divided {
-            for ref child_node in self.children.iter().flatten() {
+            for child_node in self.children.iter().flatten() {
                 child_node.query(region, results);
             }
         }
@@ -124,7 +124,7 @@ impl OctreeNode {
         }
 
         if self.divided {
-            for ref child_node in self.children.iter().flatten() {
+            for child_node in self.children.iter().flatten() {
                 child_node.query_within_radius(center, squared_radius, region, results);
             }
         }
@@ -132,7 +132,7 @@ impl OctreeNode {
     pub fn merge(&mut self) {
         if self.divided {
             let mut total_points = self.data_points.len();
-            for ref child_node in self.children.iter().flatten() {
+            for child_node in self.children.iter().flatten() {
                 total_points += child_node.data_points.len();
             }
 

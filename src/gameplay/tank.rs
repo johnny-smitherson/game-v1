@@ -20,7 +20,7 @@ use super::{
     events::{BulletHitEvent, TankCommandEvent, TankCommandEventType},
 };
 
-use bevy_spatial::{kdtree::KDTree3, AutomaticUpdate, SpatialAccess, SpatialSet, TransformMode};
+use bevy_spatial::{kdtree::KDTree3, AutomaticUpdate, SpatialAccess, TransformMode};
 
 pub struct TankPlugin;
 impl Plugin for TankPlugin {

@@ -1,3 +1,4 @@
+#[allow(clippy::type_complexity)]
 mod assets;
 mod audio;
 mod camera_extra;
@@ -20,7 +21,6 @@ use menu::MenuPlugin;
 use planet::PlanetPlugin;
 
 use bevy::{
-    log::LogPlugin,
     prelude::*,
     render::{
         settings::{WgpuFeatures, WgpuSettings},
@@ -41,7 +41,7 @@ pub fn create_game_app(disable_graphics: bool) -> App {
         .features
         .set(WgpuFeatures::VERTEX_WRITABLE_STORAGE, true);
 
-    let mut window_settings = Some(Window {
+    let window_settings = Some(Window {
         present_mode: PresentMode::AutoVsync,
         window_level: bevy::window::WindowLevel::AlwaysOnBottom,
         resolution: WindowResolution::new(1920., 1080.),
@@ -60,7 +60,7 @@ pub fn create_game_app(disable_graphics: bool) -> App {
         // window_settings = None;
     }
 
-    let mut default_plugins = DefaultPlugins
+    let default_plugins = DefaultPlugins
         .set(RenderPlugin { wgpu_settings })
         .set(ImagePlugin::default_nearest())
         .set(WindowPlugin {

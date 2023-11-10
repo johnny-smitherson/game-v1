@@ -1,7 +1,7 @@
 use crate::assets::BULLET_SIZE;
 use crate::audio::PlaySpatialAudioEvent;
 use crate::gameplay::bullet_physics::{BULLET_DENSITY, BULLET_LINEAR_DAMPING, GRAVITY_SCALE};
-use crate::terrain::{apply_height, height};
+use crate::terrain::{apply_height};
 use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
 use bevy_rapier3d::prelude::*;
@@ -72,7 +72,7 @@ fn on_bullet_impact(
     mut events: EventWriter<BulletHitEvent>,
     mut audio_events: EventWriter<PlaySpatialAudioEvent>,
 ) {
-    for (bullet_ent, bullet_tr, bullet_vel, bullet_children, bullet_hit, bullet) in hits.iter() {
+    for (bullet_ent, bullet_tr, bullet_vel, bullet_children, _bullet_hit, bullet) in hits.iter() {
         // send event with all data
         events.send(BulletHitEvent {
             bullet_vel: *bullet_vel,

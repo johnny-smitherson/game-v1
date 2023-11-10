@@ -1,8 +1,7 @@
 use bevy::{
     asset::AssetEvents,
-    ecs::schedule::{BoxedScheduleLabel, ScheduleLabel},
+    ecs::schedule::{BoxedScheduleLabel},
     prelude::*,
-    render::Render,
 };
 use game::create_game_app;
 fn main() {

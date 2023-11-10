@@ -34,7 +34,7 @@ impl Octree {
     pub fn query_within_radius(&self, center: &Vec3, radius: f32, results: &mut Vec<DataPoint>) {
         let half_extents = Vec3::splat(radius);
         let region = BoundingBox {
-            center: center.clone(),
+            center: *center,
             half_extents,
         };
         self.root
