@@ -1,6 +1,6 @@
 use bevy::{
     asset::AssetEvents,
-    ecs::schedule::{BoxedScheduleLabel},
+    ecs::schedule::BoxedScheduleLabel,
     prelude::*,
 };
 use game::create_game_app;

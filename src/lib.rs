@@ -1,10 +1,10 @@
-#[allow(clippy::type_complexity)]
 mod assets;
 mod audio;
 mod camera_extra;
 mod camera_flying;
 mod gameplay;
 mod menu;
+#[allow(dead_code)]
 mod oct_tree;
 mod piramida;
 mod planet;

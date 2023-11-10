@@ -1,4 +1,4 @@
-use bevy::{prelude::*};
+use bevy::prelude::*;
 use bevy_inspector_egui::InspectorOptions;
 
 use crate::{
@@ -69,6 +69,7 @@ fn setup_minimap_ui(mut commands: Commands, camera_q: Query<&ExtraCamera, With<M
         });
 }
 
+#[allow(clippy::type_complexity)]
 fn update_minimap_position(
     mut minimap: Query<&mut Transform, With<MinimapCamera>>,
     tanks: Query<(&Transform, Option<&PlayerControlledTank>), (With<Tank>, Without<MinimapCamera>)>,

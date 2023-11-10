@@ -38,6 +38,7 @@ enum TankUIButton {
     Fire,
 }
 
+#[allow(clippy::type_complexity)]
 fn send_events_button_press(
     mut interaction_query: Query<
         (

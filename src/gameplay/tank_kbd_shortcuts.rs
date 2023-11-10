@@ -25,6 +25,7 @@ impl Plugin for KeyboardShortcutsPlugin {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn center_camera_on_player_tank(
     mut camera_pivot: Query<(&mut Transform, &mut FlyingCameraPivot), With<FlyingCameraPivot>>,
     player_tank: Query<
