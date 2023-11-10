@@ -247,12 +247,12 @@ fn control_tank_mvmt(
         tank_controller.translation = Some(-tank_transform.right() * _delta_adv);
 
         const GIZMO_FIRE_LEN: f32 = 10.0;
-        const GIZMO_EMPTY_RADIUS: f32 = 4.0;
+        const GIZMO_EMPTY_RADIUS: f32 = 2.0;
         tank_data.fire_direction = Quat::from_rotation_y(tank_data.bearing) * Vec3::Z;
         tank_data.fire_direction =
             (tank_data.fire_direction * elevation.cos() + Vec3::Y * elevation.sin()).normalize();
 
-        let gizmo_origin = tank_transform.translation + Vec3::Y * GIZMO_EMPTY_RADIUS;
+        let gizmo_origin = tank_transform.translation + Vec3::Y * 0.3;
         let gizmo_fire_src = gizmo_origin + tank_data.fire_direction * GIZMO_EMPTY_RADIUS;
         let gizmo_fire_end =
             gizmo_origin + tank_data.fire_direction * (GIZMO_FIRE_LEN + GIZMO_EMPTY_RADIUS);

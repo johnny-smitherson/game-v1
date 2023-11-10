@@ -14,11 +14,7 @@ impl Plugin for GameAssetsPlugin {
             .register_type::<BulletAssets>()
             .init_resource::<GameSceneAssets>()
             .register_type::<GameSceneAssets>()
-
-            .add_systems(
-                PreStartup,
-                (setup_bullet_assets, load_glb_scenes),
-            );
+            .add_systems(PreStartup, (setup_bullet_assets, load_glb_scenes));
     }
 }
 
