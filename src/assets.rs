@@ -62,6 +62,8 @@ fn load_glb_scenes(mut scene_assets: ResMut<GameSceneAssets>, ass: Res<AssetServ
     }
 }
 
+pub const BULLET_SIZE: f32 = 0.05;
+
 fn setup_bullet_assets(
     mut effects: ResMut<Assets<EffectAsset>>,
 
@@ -69,8 +71,6 @@ fn setup_bullet_assets(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut bullet_assets: ResMut<BulletAssets>,
 ) {
-    const BULLET_SIZE: f32 = 0.05;
-
     let mesh = meshes.add(Mesh::from(shape::Cube { size: BULLET_SIZE }));
     bullet_assets.mesh = mesh;
     let material = materials.add(Color::rgb(0.8, 0.7, 0.6).into());

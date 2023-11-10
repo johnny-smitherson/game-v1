@@ -291,8 +291,12 @@ impl Triangle {
         self.max_leaf_level = self.level;
     }
 
-    pub fn update_split(&mut self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
-        let dirty = self._do_update_split(pos, settings);
+    pub fn update_split(
+        &mut self,
+        probe_dist: &(impl Fn(&Vec3) -> f32 + std::marker::Sync),
+        settings: &TerrainSettings,
+    ) -> bool {
+        let dirty = self._do_update_split(probe_dist, settings);
 
         if !self.was_updated || dirty {
             self.was_updated = true;
@@ -301,15 +305,20 @@ impl Triangle {
     }
 
     /// returns true if we changed something notable and you wanna update the thing
-    fn _do_update_split(&mut self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
+    fn _do_update_split(
+        &mut self,
+        probe_dist: &(impl Fn(&Vec3) -> f32 + std::marker::Sync),
+        settings: &TerrainSettings,
+    ) -> bool {
         use rayon::prelude::*;
 
         let mut dirty: bool = false;
-        if !self.is_split() && self.should_split(pos, settings) {
+        let closest_dist: f32 = probe_dist(&self.data.center);
+        if !self.is_split() && self.should_split(closest_dist, settings) {
             self.split();
             dirty = true;
         }
-        if self.is_split() && self.should_merge(pos, settings) {
+        if self.is_split() && self.should_merge(closest_dist, settings) {
             self.merge();
             dirty = true;
         }
@@ -320,7 +329,7 @@ impl Triangle {
                 .as_mut()
                 .expect("wtf")
                 .par_iter_mut()
-                .map(|child| child.as_mut()._do_update_split(pos, settings))
+                .map(|child| child.as_mut()._do_update_split(probe_dist, settings))
                 .collect();
 
             for child_dirty in child_results {
@@ -389,7 +398,7 @@ impl Triangle {
         // }
     }
 
-    fn should_split(&self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
+    fn should_split(&self, dist: f32, settings: &TerrainSettings) -> bool {
         if self.level < settings.MIN_SPLIT_LEVEL || self.level < BASE_SPLIT_LEVEL {
             return true;
         }
@@ -398,12 +407,12 @@ impl Triangle {
         {
             false
         } else {
-            self.get_distance_over_size(pos)
+            dist / self.data.min_edge_len
                 < (1.0 - settings.SPLIT_LAZY_COEF) * settings.TESSELATION_VALUE
         }
     }
 
-    fn should_merge(&self, pos: &Vec<Vec3>, settings: &TerrainSettings) -> bool {
+    fn should_merge(&self, dist: f32, settings: &TerrainSettings) -> bool {
         if self.level <= settings.MIN_SPLIT_LEVEL || self.level <= BASE_SPLIT_LEVEL {
             return false;
         }
@@ -411,21 +420,8 @@ impl Triangle {
         if self.level > settings.MAX_SPLIT_LEVEL {
             true
         } else {
-            self.get_distance_over_size(pos)
+            dist / self.data.min_edge_len
                 > (1.0 + settings.SPLIT_LAZY_COEF) * settings.TESSELATION_VALUE
         }
-    }
-
-    fn get_distance_over_size(&self, all_pos: &Vec<Vec3>) -> f32 {
-        if all_pos.is_empty() {
-            return 666666.0_f32;
-        }
-
-        all_pos
-            .iter()
-            .map(|pos| (*pos - self.data.center).length())
-            .min_by(|a, b| a.partial_cmp(b).unwrap())
-            .unwrap()
-            / self.data.min_edge_len
     }
 }

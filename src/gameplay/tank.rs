@@ -9,6 +9,7 @@ use crate::{
     terrain::{apply_height, height},
 };
 use core::f32::consts::PI;
+use std::time::Duration;
 
 use smart_default::SmartDefault;
 
@@ -16,8 +17,10 @@ use super::{
     bullet_physics::{
         compute_ballistic_solution, BulletSolutions, GRAVITY_SCALE, TANK_BULLET_SPEED_PER_POWER,
     },
-    events::{TankCommandEvent, TankCommandEventType},
+    events::{BulletHitEvent, TankCommandEvent, TankCommandEventType},
 };
+
+use bevy_spatial::{kdtree::KDTree3, AutomaticUpdate, SpatialAccess, SpatialSet, TransformMode};
 
 pub struct TankPlugin;
 impl Plugin for TankPlugin {
@@ -27,7 +30,7 @@ impl Plugin for TankPlugin {
             .register_type::<PlayerControlledTank>()
             .register_type::<AiControlledTank>()
             .add_systems(Startup, tank_setup)
-            .add_systems(PreUpdate, tank_fix_above_terrain)
+            .add_systems(PreUpdate, (tank_fix_above_terrain, on_tank_hit))
             .add_systems(
                 Update,
                 (
@@ -36,7 +39,13 @@ impl Plugin for TankPlugin {
                     (control_tank_mvmt, tank_gravity_update).chain(),
                 ),
             )
-            .add_systems(PostUpdate, read_tank_gravity_result);
+            .add_systems(PostUpdate, read_tank_gravity_result)
+            // Spatial tracking of tanks for damage
+            .add_plugins(
+                AutomaticUpdate::<Tank>::new()
+                    .with_frequency(Duration::from_secs_f32(1.0 / 60.0))
+                    .with_transform(TransformMode::GlobalTransform),
+            );
     }
 }
 
@@ -65,6 +74,28 @@ pub struct Tank {
 pub struct TankGravity {
     is_grounded: bool,
     fall_time: f32,
+}
+
+const BULLET_DAMAGE_DISTANCE: f32 = 26.0;
+
+fn on_tank_hit(tank_tree: Res<KDTree3<Tank>>, mut events: EventReader<BulletHitEvent>) {
+    for event in events.iter() {
+        for (tank_pos, tank_ent) in
+            tank_tree.within_distance(event.bullet_pos, BULLET_DAMAGE_DISTANCE)
+        {
+            let bullet_dist = (event.bullet_pos - tank_pos).length();
+            if let Some(tank_ent) = tank_ent {
+                info!(
+                    "hit {:?} at {:?}, dist {:?}",
+                    tank_ent, tank_pos, bullet_dist
+                );
+            } else {
+                warn!("WTF got hit but no entity, why?");
+            }
+            // pos: Vec3
+            // do something with the nearest entity here
+        }
+    }
 }
 
 fn control_tank_aim(
@@ -99,24 +130,16 @@ fn control_tank_aim(
         }
     }
 }
-use bevy_prototype_debug_lines::DebugLines;
-fn debug_line_strip(
-    lines: &mut ResMut<DebugLines>,
-    gizmos: &mut Gizmos,
-    trajectory: &[Vec3],
-    color: &Color,
-) {
+fn debug_line_strip(gizmos: &mut Gizmos, trajectory: &[Vec3], color: &Color) {
     for i in 0..trajectory.len() - 1 {
         let point_a = trajectory[i];
         let point_b = trajectory[i + 1];
-        lines.line_colored(point_a, point_b, 0.0, *color);
         gizmos.line(point_a, point_b, *color);
     }
 }
 fn debug_show_tank_aim(
     tanks: Query<(&Transform, &Tank), With<PlayerControlledTank>>,
     mut gizmos: Gizmos,
-    mut lines: ResMut<DebugLines>,
 ) {
     let mut draw_trajectory = |traj: &Vec<Vec2>, pos, bearing: f32, color| {
         let traj_3d: Vec<Vec3> = traj
@@ -124,7 +147,7 @@ fn debug_show_tank_aim(
             .map(|v2| Vec3::new(v2.x * bearing.sin(), v2.y, v2.x * bearing.cos()) + pos)
             .collect();
         // gizmos.linestrip(traj_3d, color);
-        debug_line_strip(&mut lines, &mut gizmos, &traj_3d, &color);
+        debug_line_strip(&mut gizmos, &traj_3d, &color);
     };
     for (_tank_tr, tank) in tanks.iter() {
         let tank_pos = tank.fire_origin; // tank_tr.translation;

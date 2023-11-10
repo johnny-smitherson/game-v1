@@ -4,6 +4,7 @@ mod camera_extra;
 mod camera_flying;
 mod gameplay;
 mod menu;
+mod oct_tree;
 mod piramida;
 mod planet;
 mod raycast;
@@ -31,7 +32,6 @@ use bevy::{
 
 use crate::audio::GameAudioPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_prototype_debug_lines::DebugLinesPlugin;
 use bevy_rapier3d::prelude::*;
 use bevy_screen_diagnostics::{ScreenDiagnosticsPlugin, ScreenFrameDiagnosticsPlugin};
 
@@ -90,10 +90,6 @@ pub fn create_game_app(disable_graphics: bool) -> App {
         // ==============
         // PHYSICS AND SHIT
         // ==============
-        .add_plugins(DebugLinesPlugin {
-            depth_test: true,
-            render_layers: vec![0, 1, 2],
-        })
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::default())
         // .add_plugins(RapierDebugRenderPlugin::default())
         // ==============

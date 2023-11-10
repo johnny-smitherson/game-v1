@@ -28,6 +28,5 @@ pub struct TankCommandEvent {
 pub struct BulletHitEvent {
     pub bullet_vel: Velocity,
     pub bullet_pos: Vec3,
-    pub directly_hit_ent: Entity,
     pub tank_ent: Entity,
 }

@@ -11,15 +11,6 @@
 - [ ] flight time plus/minus keep same target
 - [ ] AI contorolled tank - shoot closest, move randomly
 - [ ] multiplayer https://johanhelsing.studio/posts/extreme-bevy
-
-
-
-# TODO - non-trivial
-- [ ] upgrade bevy 0.12
-  - audio system rewrite - 
-  - bevy-hanabi update
-  - physics libs update
-  - 
 - game mode:
   - sp PVE
   - mp FFA teams 1-4 (fortnite)
@@ -28,6 +19,16 @@
 - elo rating pvp
 - fortnite style powerup pe harta
 - skill based match making dar in acelasi univers, asesat spatial
+
+
+# TODO - non-trivial
+- [ ] app-world compute shaders? https://github.com/Kjolnyr/bevy_app_compute/pull/4
+- [ ] upgrade bevy 0.12
+  - audio system rewrite - 
+  - bevy-hanabi update
+  - physics libs update
+  - 
+
 
 # TODO - WASM WEBGL INCOMPATIBLE CRATES
 

@@ -1,5 +1,7 @@
+use crate::assets::BULLET_SIZE;
 use crate::audio::PlaySpatialAudioEvent;
 use crate::gameplay::bullet_physics::{BULLET_DENSITY, BULLET_LINEAR_DAMPING, GRAVITY_SCALE};
+use crate::terrain::{apply_height, height};
 use bevy::prelude::*;
 use bevy_hanabi::prelude::*;
 use bevy_rapier3d::prelude::*;
@@ -36,10 +38,7 @@ pub struct BulletFlyingEffectMarker;
 pub struct BulletExplodingEffectMarker;
 
 #[derive(Reflect, Component)]
-pub struct BulletHit {
-    other_thing_hit: Entity,
-    // hit_location: Vec3,
-}
+pub struct BulletHit {}
 
 fn delete_tombstones(
     mut commands: Commands,
@@ -78,7 +77,6 @@ fn on_bullet_impact(
         events.send(BulletHitEvent {
             bullet_vel: *bullet_vel,
             bullet_pos: bullet_tr.translation,
-            directly_hit_ent: bullet_hit.other_thing_hit,
             tank_ent: bullet.shooter,
         });
         // put the tombstone on the thing
@@ -202,19 +200,32 @@ fn capture_bullet_impact(
     mut commands: Commands,
     mut collision_events: EventReader<CollisionEvent>,
     bullet_query: Query<Entity, With<Bullet>>,
+    mut bullet_transform: Query<(Entity, &mut Transform), With<Bullet>>,
 ) {
     for collision_event in collision_events.iter() {
         if let CollisionEvent::Started(col1, col2, _flags) = collision_event {
             if bullet_query.contains(*col1) {
-                commands.entity(*col1).insert(BulletHit {
-                    other_thing_hit: *col2,
-                });
+                commands
+                    .entity(*col1)
+                    .insert(BulletHit {})
+                    .insert(Velocity::default());
             }
             if bullet_query.contains(*col2) {
-                commands.entity(*col2).insert(BulletHit {
-                    other_thing_hit: *col1,
-                });
+                commands
+                    .entity(*col2)
+                    .insert(BulletHit {})
+                    .insert(Velocity::default());
             }
+        }
+    }
+    for (bullet_ent, mut bullet_tr) in bullet_transform.iter_mut() {
+        let terrain_pos = apply_height(&bullet_tr.translation);
+        if terrain_pos.y > bullet_tr.translation.y {
+            bullet_tr.translation.y = terrain_pos.y + BULLET_SIZE;
+            commands
+                .entity(bullet_ent)
+                .insert(BulletHit {})
+                .insert(Velocity::default());
         }
     }
 }

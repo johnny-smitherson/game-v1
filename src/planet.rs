@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 // use std::collections::{vec_deque, VecDeque};
 use super::menu::UiMenuState;
 use crate::piramida::Piramidesc;
@@ -9,6 +11,10 @@ use bevy::prelude::*;
 use bevy::render::primitives::Aabb;
 use bevy_mod_raycast::RaycastMesh;
 use bevy_rapier3d::prelude::*;
+use bevy_spatial::kdtree::KDTree3;
+use bevy_spatial::AutomaticUpdate;
+use bevy_spatial::SpatialAccess;
+use bevy_spatial::TransformMode;
 use rayon::prelude::IntoParallelRefMutIterator;
 
 pub struct PlanetPlugin;
@@ -16,7 +22,12 @@ impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Triangle>()
             .add_systems(Startup, setup_planet)
-            .add_systems(PreUpdate, update_triangle_split);
+            .add_systems(PostUpdate, update_triangle_split)
+            .add_plugins(
+                AutomaticUpdate::<TerrainSplitProbe>::new()
+                    .with_frequency(Duration::from_secs_f32(1.0 / 60.0))
+                    .with_transform(TransformMode::GlobalTransform),
+            );
     }
 }
 
@@ -29,7 +40,8 @@ pub struct PlanetComponent;
 
 #[allow(clippy::type_complexity)]
 fn update_triangle_split(
-    probe_query: Query<&Transform, With<TerrainSplitProbe>>,
+    // probe_query: Query<&Transform, With<TerrainSplitProbe>>,
+    probe_tree: Res<KDTree3<TerrainSplitProbe>>,
     mut tri_query: Query<
         (&mut Triangle, &mut Handle<Mesh>, &mut Collider, &mut Aabb),
         (
@@ -42,7 +54,25 @@ fn update_triangle_split(
     mut ui_state: ResMut<UiMenuState>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let probe_pos: Vec<Vec3> = probe_query.iter().map(|x| x.translation).collect();
+    // let probe_pos: Vec<Vec3> = probe_query.iter().map(|x| x.translation).collect();
+    // let probe_dist = |pos: &Vec3| -> f32 {
+    //     if probe_pos.is_empty() {
+    //         return 666666.0_f32;
+    //     }
+    //     probe_pos
+    //         .iter()
+    //         .map(|pp| (*pp - *pos).length())
+    //         .min_by(|a, b| a.partial_cmp(b).unwrap())
+    //         .unwrap()
+    // };
+
+    let probe_dist_from_tree = |pos: &Vec3| -> f32 {
+        if let Some(nn) = probe_tree.nearest_neighbour(*pos) {
+            nn.0.distance(*pos)
+        } else {
+            666666.0_f32
+        }
+    };
     // serial version
     // for (mut tri, mut mesh_handle) in tri_query.iter_mut() {
     //     let changed = tri.as_mut().update_split(&player_pos);
@@ -65,7 +95,7 @@ fn update_triangle_split(
     let query_results: Vec<Option<_>> = query_args
         .par_iter_mut()
         .map(|(tri, mesh_handle, collider, aabb)| {
-            let changed = tri.update_split(&probe_pos, &ui_state.settings);
+            let changed = tri.update_split(&probe_dist_from_tree, &ui_state.settings);
             if changed {
                 let (mesh, new_collider) = tri.generate_mesh(&ui_state.settings);
                 *collider.as_mut() = new_collider;
