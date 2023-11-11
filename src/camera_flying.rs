@@ -19,6 +19,7 @@ use bevy::{
 use crate::audio::SpatialAudioListener;
 use crate::planet::TerrainSplitProbe;
 use crate::raycast::TerrainRaycastSet;
+use crate::terrain::PLANET_MAX_PLAY_RADIUS;
 
 // use std::collections::{vec_deque, VecDeque};
 use super::menu::UiMenuState;
@@ -344,7 +345,7 @@ fn rotate_camera_by_mouse(
 
     pivot_tr.translation.y = pivot_comp.camera_height + height(&pivot_tr.translation);
     let mut _pos_xz = Vec3::new(pivot_tr.translation.x, 0.0, pivot_tr.translation.z);
-    let max_camera_xz = PLANET_RADIUS / 5.0;
+    let max_camera_xz = PLANET_MAX_PLAY_RADIUS;
     if _pos_xz.length() > max_camera_xz {
         _pos_xz = _pos_xz.normalize() * max_camera_xz;
         pivot_tr.translation.x = _pos_xz.x;

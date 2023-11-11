@@ -5,7 +5,7 @@ use crate::{
     camera_extra::{spawn_extra_camera, ExtraCamera},
     camera_flying::FlyingCamera,
     menu::UiMarkHoverBundle,
-    terrain::MOUNTAIN_HEIGHT,
+    terrain::{MOUNTAIN_HEIGHT, PLANET_MAX_PLAY_RADIUS},
 };
 
 use super::tank::{PlayerControlledTank, Tank};
@@ -127,6 +127,16 @@ fn update_minimap_position(
                 tank_tr.translation + Vec3::Y * (circle_radius + MOUNTAIN_HEIGHT) * scale;
             gizmos.circle(circle_center, Vec3::Y, circle_radius * scale, color);
         }
+    }
+
+    // ** GIZMOS - playable range
+    for j in [1.0, 1.5, 2.0] {
+        gizmos.circle(
+            Vec3::Y * MOUNTAIN_HEIGHT * j,
+            Vec3::Y,
+            PLANET_MAX_PLAY_RADIUS,
+            Color::ORANGE,
+        );
     }
 }
 

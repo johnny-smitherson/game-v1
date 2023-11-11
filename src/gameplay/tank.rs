@@ -28,7 +28,6 @@ impl Plugin for TankPlugin {
         app.register_type::<TankGravity>()
             .register_type::<Tank>()
             .register_type::<PlayerControlledTank>()
-            .register_type::<AiControlledTank>()
             .add_systems(Startup, tank_setup)
             .add_systems(PreUpdate, (tank_fix_above_terrain, on_tank_hit))
             .add_systems(
@@ -51,9 +50,6 @@ impl Plugin for TankPlugin {
 
 #[derive(Reflect, Component, Default)]
 pub struct PlayerControlledTank;
-
-#[derive(Reflect, Component, Default)]
-pub struct AiControlledTank;
 
 #[derive(Reflect, Component, SmartDefault)]
 pub struct Tank {
@@ -370,7 +366,7 @@ fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
         } else {
             commands
                 .entity(tank_id)
-                .insert(AiControlledTank)
+                .insert(super::tank_ai::AiControlledTank::new())
                 .insert(Name::new(format!("AI Tank ({})", i)));
         }
     }

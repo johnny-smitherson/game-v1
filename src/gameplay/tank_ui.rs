@@ -1,6 +1,3 @@
-//! This example illustrates how to create a button that changes color and text based on its
-//! interaction state.
-
 use bevy::prelude::*;
 
 use crate::menu::{egui_ui_system, mouse_is_over_menu, UiMarkHoverBundle, UiMarkMouseOverMenu};
