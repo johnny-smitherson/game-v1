@@ -23,7 +23,7 @@ use crate::terrain::PLANET_MAX_PLAY_RADIUS;
 
 // use std::collections::{vec_deque, VecDeque};
 use super::menu::UiMenuState;
-use super::terrain::{height, PLANET_RADIUS};
+use super::terrain::height;
 
 // use bevy::ecs::event::Events;
 use bevy::input::mouse::MouseWheel;

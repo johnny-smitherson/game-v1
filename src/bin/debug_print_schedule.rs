@@ -1,8 +1,4 @@
-use bevy::{
-    asset::AssetEvents,
-    ecs::schedule::BoxedScheduleLabel,
-    prelude::*,
-};
+use bevy::{asset::AssetEvents, ecs::schedule::BoxedScheduleLabel, prelude::*};
 use game::create_game_app;
 fn main() {
     let args: Vec<String> = std::env::args().collect();
