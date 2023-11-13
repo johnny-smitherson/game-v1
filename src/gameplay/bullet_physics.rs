@@ -1,7 +1,7 @@
 use bevy::prelude::{Reflect, Vec2};
 use std::{cmp::Ordering, f32::consts::PI};
 
-pub const TANK_BULLET_SPEED_PER_POWER: f32 = 0.25;
+pub const TANK_BULLET_SPEED_PER_POWER: f32 = 0.28;
 pub const GRAVITY_SCALE: f32 = 1.0;
 pub const GRAVITY_MAGNITUDE: f32 = 9.81;
 pub const BULLET_DENSITY: f32 = 100.0;
@@ -31,59 +31,7 @@ pub fn compute_ballistic_solution(range: f32, _y_diff: f32, speed: f32) -> Bulle
     let points: usize = TRAJECTORY_POINTS;
     let pos = Vec2::new(range, _y_diff);
     if alpha > 0.0 {
-        let mut sol0 = _compute_ballistic_solution_with_damping(pos, speed, gravity, points, alpha);
-        let mut lows: Vec<Option<BulletSolution>> = vec![sol0.low_sol.clone()];
-        let mut highs: Vec<Option<BulletSolution>> = vec![sol0.high_sol.clone()];
-        for _ in 0..5 {
-            if let Some(low) = sol0.low_sol {
-                let next = _compute_ballistic_solution_with_damping(
-                    low._next_iter_point,
-                    speed,
-                    gravity,
-                    points,
-                    alpha,
-                );
-                lows.push(next.low_sol.clone());
-                sol0.low_sol = next.low_sol;
-                sol0.err_sol = sol0.err_sol.or(next.err_sol);
-            }
-            if let Some(high) = sol0.high_sol {
-                let next = _compute_ballistic_solution_with_damping(
-                    high._next_iter_point,
-                    speed,
-                    gravity,
-                    points,
-                    alpha,
-                );
-                highs.push(next.high_sol.clone());
-                sol0.high_sol = next.high_sol;
-                sol0.err_sol = sol0.err_sol.or(next.err_sol);
-            }
-        }
-        let cmp = |a: &Option<BulletSolution>, b: &Option<BulletSolution>| {
-            let va = if let Some(x) = a {
-                x.trajectory.last().unwrap().distance(pos)
-            } else {
-                9999999.9_f32
-            };
-            let vb = if let Some(x) = b {
-                x.trajectory.last().unwrap().distance(pos)
-            } else {
-                9999999.9_f32
-            };
-            if va < vb {
-                Ordering::Less
-            } else if va > vb {
-                Ordering::Greater
-            } else {
-                Ordering::Equal
-            }
-        };
-        highs.sort_by(cmp);
-        lows.sort_by(cmp);
-        sol0.low_sol = lows[0].clone();
-        sol0.high_sol = highs[0].clone();
-        sol0
+        _compute_with_damping_many_iter(pos, speed, gravity, points, alpha)
     } else {
         _compute_ballistic_solution_no_damping(pos, speed, gravity, points)
     }
@@ -153,6 +101,68 @@ fn _compute_ballistic_solution_no_damping(
         high_sol: Some(make_solution(_ang2, points)),
         err_sol: None,
     }
+}
+
+fn _compute_with_damping_many_iter(
+    pos: Vec2,
+    speed: f32,
+    gravity: f32,
+    points: usize,
+    alpha: f32,
+) -> BulletSolutions {
+    let mut sol0 = _compute_ballistic_solution_with_damping(pos, speed, gravity, points, alpha);
+    let mut lows: Vec<Option<BulletSolution>> = vec![sol0.low_sol.clone()];
+    let mut highs: Vec<Option<BulletSolution>> = vec![sol0.high_sol.clone()];
+    for _ in 0..5 {
+        if let Some(low) = sol0.low_sol {
+            let next = _compute_ballistic_solution_with_damping(
+                low._next_iter_point,
+                speed,
+                gravity,
+                points,
+                alpha,
+            );
+            lows.push(next.low_sol.clone());
+            sol0.low_sol = next.low_sol;
+            sol0.err_sol = sol0.err_sol.or(next.err_sol);
+        }
+        if let Some(high) = sol0.high_sol {
+            let next = _compute_ballistic_solution_with_damping(
+                high._next_iter_point,
+                speed,
+                gravity,
+                points,
+                alpha,
+            );
+            highs.push(next.high_sol.clone());
+            sol0.high_sol = next.high_sol;
+            sol0.err_sol = sol0.err_sol.or(next.err_sol);
+        }
+    }
+    let cmp = |a: &Option<BulletSolution>, b: &Option<BulletSolution>| {
+        let va = if let Some(x) = a {
+            x.trajectory.last().unwrap().distance(pos)
+        } else {
+            9999999.9_f32
+        };
+        let vb = if let Some(x) = b {
+            x.trajectory.last().unwrap().distance(pos)
+        } else {
+            9999999.9_f32
+        };
+        if va < vb {
+            Ordering::Less
+        } else if va > vb {
+            Ordering::Greater
+        } else {
+            Ordering::Equal
+        }
+    };
+    highs.sort_by(cmp);
+    lows.sort_by(cmp);
+    sol0.low_sol = lows[0].clone();
+    sol0.high_sol = highs[0].clone();
+    sol0
 }
 
 fn _compute_ballistic_solution_with_damping(

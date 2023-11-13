@@ -66,7 +66,7 @@ fn noise_single(x: f32, y: f32, seed: i32) -> f32 {
 fn d_height(x: f32, y: f32) -> f32 {
     let octaves = 2;
     let count_per_octave = 2;
-    (0..octaves)
+    (1..=octaves)
         .map(|i| {
             let exp = 1.3_f32.powi(i);
             let freq = NOISE_BASE_FREQ * exp;

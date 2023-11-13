@@ -7,9 +7,10 @@ use crate::{
     menu::mouse_not_over_menu,
     planet::TerrainSplitProbe,
     terrain::{apply_height, height},
+    utils::cap_2pi,
 };
 use core::f32::consts::PI;
-use std::time::Duration;
+use std::{collections::VecDeque, time::Duration};
 
 use smart_default::SmartDefault;
 
@@ -44,7 +45,21 @@ impl Plugin for TankPlugin {
                 AutomaticUpdate::<Tank>::new()
                     .with_frequency(Duration::from_secs_f32(1.0 / 60.0))
                     .with_transform(TransformMode::GlobalTransform),
-            );
+            )
+            .add_systems(First, update_last_tank_positions);
+    }
+}
+
+fn update_last_tank_positions(
+    mut tanks: Query<(&mut Tank, &GlobalTransform), With<Tank>>,
+    time: Res<Time>,
+) {
+    for (mut tank, transform) in tanks.iter_mut() {
+        tank.last_positions
+            .push_back((transform.translation(), time.delta_seconds()));
+        if tank.last_positions.len() > 30 {
+            tank.last_positions.pop_front();
+        }
     }
 }
 
@@ -60,10 +75,29 @@ pub struct Tank {
     #[default(1000.0)]
     pub power: f32,
 
+    #[default(0.0)]
+    pub body_orientation: f32,
+    pub move_direction: Vec3,
+    pub last_positions: VecDeque<(Vec3, f32)>,
+
     pub fire_direction: Vec3,
     pub fire_origin: Vec3,
 
     pub fire_solutions: Option<BulletSolutions>,
+}
+
+impl Tank {
+    pub fn estimate_future_position(&self, seconds_future: f32) -> Vec3 {
+        if self.last_positions.len() <= 2 {
+            return Vec3::ZERO;
+        }
+        let total_time: f32 = self.last_positions.iter().map(|x| x.1).sum();
+        let p1 = self.last_positions.front().expect("wtf?").0;
+        let p2 = self.last_positions.back().expect("wtf?").0;
+
+        let speed = (p2 - p1) / total_time;
+        p2 + speed * seconds_future
+    }
 }
 
 #[derive(Reflect, Component, Default)]
@@ -74,7 +108,11 @@ pub struct TankGravity {
 
 const BULLET_DAMAGE_DISTANCE: f32 = 26.0;
 
-fn on_tank_hit(tank_tree: Res<KDTree3<Tank>>, mut events: EventReader<BulletHitEvent>) {
+fn on_tank_hit(
+    mut commands: Commands,
+    tank_tree: Res<KDTree3<Tank>>,
+    mut events: EventReader<BulletHitEvent>,
+) {
     for event in events.iter() {
         for (tank_pos, tank_ent) in
             tank_tree.within_distance(event.bullet_pos, BULLET_DAMAGE_DISTANCE)
@@ -85,6 +123,7 @@ fn on_tank_hit(tank_tree: Res<KDTree3<Tank>>, mut events: EventReader<BulletHitE
                     "hit {:?} at {:?}, dist {:?}",
                     tank_ent, tank_pos, bullet_dist
                 );
+                commands.entity(tank_ent).despawn_recursive();
             } else {
                 warn!("WTF got hit but no entity, why?");
             }
@@ -246,14 +285,14 @@ fn control_tank_mvmt(
 
         // increment bearing
         tank_data.bearing += _delta_bearing;
-        tank_data.bearing %= PI * 2.0;
-        if tank_data.bearing < -PI {
-            tank_data.bearing += PI * 2.0;
-        } else if tank_data.bearing > PI {
-            tank_data.bearing -= PI * 2.0;
-        }
+        tank_data.bearing = cap_2pi(tank_data.bearing);
+
         // increment tank
-        tank_transform.rotate(Quat::from_rotation_y(-_delta_turn));
+        tank_data.body_orientation += -_delta_turn;
+        tank_data.body_orientation = cap_2pi(tank_data.body_orientation);
+
+        tank_data.move_direction = Quat::from_rotation_y(tank_data.body_orientation) * -Vec3::Z;
+        tank_transform.rotation = Quat::from_rotation_y(tank_data.body_orientation);
 
         // elevation
         tank_data.elevation += _delta_elev;
@@ -263,7 +302,7 @@ fn control_tank_mvmt(
         tank_data.power = tank_data.power.clamp(0.0, 1000.0);
         let elevation = tank_data.elevation;
 
-        tank_controller.translation = Some(-tank_transform.right() * _delta_adv);
+        tank_controller.translation = Some(tank_transform.forward() * _delta_adv);
 
         const GIZMO_FIRE_LEN: f32 = 10.0;
         const GIZMO_EMPTY_RADIUS: f32 = 2.0;
@@ -281,6 +320,11 @@ fn control_tank_mvmt(
 
         gizmos.line(gizmo_fire_src, gizmo_fire_end, Color::RED);
         gizmos.line(gizmo_blue_proj_src, gizmo_blue_proj_end, Color::BLUE);
+        gizmos.line(
+            tank_transform.translation,
+            tank_transform.translation + tank_data.move_direction * GIZMO_FIRE_LEN,
+            Color::GREEN,
+        );
         // gizmo_config.line_width = 7.0;
     }
 }
@@ -354,7 +398,9 @@ fn tank_setup(mut commands: Commands, scene_assets: Res<GameSceneAssets>) {
         commands
             .spawn((tank_model, Name::new("Tank Model")))
             .insert(
-                Transform::from_translation(Vec3::Y * -0.25_f32).with_scale(Vec3::ONE * 0.25_f32),
+                Transform::from_translation(Vec3::Y * -0.25_f32)
+                    .with_scale(Vec3::ONE * 0.25_f32)
+                    .with_rotation(Quat::from_rotation_y(-PI / 2.0)),
             )
             .set_parent(tank_id); //.insert(Transform::from_scale(Vec3::ONE * 0.25));
 
@@ -401,11 +447,11 @@ fn read_tank_gravity_result(
 
 fn tank_fix_above_terrain(mut transforms: Query<&mut Transform, With<TankGravity>>) {
     for mut transform in transforms.iter_mut() {
-        const RESET_BELOW: f32 = 5.0;
+        const RESET_BELOW: f32 = 10.0;
         let terrain_height = height(&transform.translation);
         if transform.translation.y < terrain_height - RESET_BELOW {
             warn!(
-                "SHIT FELL UNDER TERRAIN: height={}  Y={}",
+                "SHIT FELL UNDER TERRAIN: terrain_height={}  obj_Y={}",
                 terrain_height, transform.translation.y
             );
             transform.translation.y = terrain_height + RESET_BELOW * 3.;

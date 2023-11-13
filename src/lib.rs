@@ -11,6 +11,7 @@ mod planet;
 mod raycast;
 mod terrain;
 mod triangle;
+mod utils;
 
 use std::time::Duration;
 
