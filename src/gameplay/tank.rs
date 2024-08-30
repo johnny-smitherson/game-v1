@@ -84,6 +84,7 @@ pub struct Tank {
     pub fire_origin: Vec3,
 
     pub fire_solutions: Option<BulletSolutions>,
+    pub has_sol: bool,
 }
 
 impl Tank {
@@ -147,17 +148,19 @@ fn control_tank_aim(
                 // compute elevation ignoring Y diff
                 // https://qph.cf2.quoracdn.net/main-qimg-9aa63a48016d31489787c9c36f138c79
                 let range = Vec2::new(diff.x, diff.z).length();
-                let speed = tank.power * TANK_BULLET_SPEED_PER_POWER;
                 tank.bearing = bearing;
 
-                let solutions = compute_ballistic_solution(range, diff.y, speed);
+                let solutions =
+                    compute_ballistic_solution(range, diff.y, TANK_BULLET_SPEED_PER_POWER * 1000.0);
                 tank.fire_solutions = Some(solutions.clone());
-                if let Some(s) = solutions.low_sol {
+                if let Some(s) = solutions.chosen_sol {
                     tank.elevation = s.elevation;
-                } else if let Some(s) = solutions.high_sol {
-                    tank.elevation = s.elevation;
+                    tank.power = s.power;
+                    tank.has_sol = true;
                 } else if let Some(s) = solutions.err_sol {
                     tank.elevation = s.elevation;
+                    tank.power = s.power;
+                    tank.has_sol = false;
                 } else {
                     panic!("solution generator did not return err_sol");
                 }
@@ -172,10 +175,7 @@ fn debug_line_strip(gizmos: &mut Gizmos, trajectory: &[Vec3], color: &Color) {
         gizmos.line(point_a, point_b, *color);
     }
 }
-fn debug_show_tank_aim(
-    tanks: Query<(&Transform, &Tank), With<PlayerControlledTank>>,
-    mut gizmos: Gizmos,
-) {
+fn debug_show_tank_aim(tanks: Query<(&Transform, &Tank)>, mut gizmos: Gizmos) {
     let mut draw_trajectory = |traj: &Vec<Vec2>, pos, bearing: f32, color| {
         let traj_3d: Vec<Vec3> = traj
             .iter()
@@ -187,7 +187,11 @@ fn debug_show_tank_aim(
     for (_tank_tr, tank) in tanks.iter() {
         let tank_pos = tank.fire_origin; // tank_tr.translation;
         if let Some(solutions) = &tank.fire_solutions {
-            if let Some(solution) = &solutions.low_sol {
+            for solution in solutions.all_sol.iter() {
+                draw_trajectory(&solution.trajectory, tank_pos, tank.bearing, Color::GRAY);
+            }
+
+            if let Some(solution) = &solutions.chosen_sol {
                 draw_trajectory(
                     &solution.trajectory,
                     tank_pos,
@@ -195,14 +199,7 @@ fn debug_show_tank_aim(
                     Color::YELLOW_GREEN,
                 );
             }
-            if let Some(solution) = &solutions.high_sol {
-                draw_trajectory(
-                    &solution.trajectory,
-                    tank_pos,
-                    tank.bearing,
-                    Color::DARK_GREEN,
-                );
-            }
+
             if let Some(solution) = &solutions.err_sol {
                 draw_trajectory(
                     &solution.trajectory,

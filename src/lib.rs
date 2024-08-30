@@ -82,7 +82,7 @@ pub fn create_game_app(disable_graphics: bool) -> App {
             },
             ..default()
         })
-        // .insert_resource(Msaa::Sample4)
+        .insert_resource(Msaa::Off)
         // .add_systems(PreStartup, setup_world_scene)
         .insert_resource(AmbientLight {
             color: Color::WHITE,

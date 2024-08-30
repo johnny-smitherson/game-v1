@@ -54,7 +54,7 @@ fn tank_ai_progress_stopwatches(mut tanks: Query<&mut AiControlledTank>, time: R
 }
 
 const AI_RELOAD_TIME: f32 = 3.6;
-const AI_AIM_INTERVAL: f32 = 1.0;
+const AI_AIM_INTERVAL: f32 = 0.1;
 const AI_TARGET_SWITCH_INTERVAL: f32 = 15.0;
 const AI_FIRE_JITTER: f32 = AI_RELOAD_TIME * 0.2;
 const AI_AIM_JITTER: f32 = AI_AIM_INTERVAL * 0.2;
@@ -62,14 +62,20 @@ const AI_TANK_MIN_SWAP_MVMT_INTERVAL: f32 = 2.0;
 const AI_TANK_MAX_SWAP_MVMT_INTERVAL: f32 = 20.0;
 
 fn tank_auto_fire(
-    mut tanks: Query<(Entity, &mut AiControlledTank)>,
+    mut tanks: Query<(Entity, &mut AiControlledTank, &Tank)>,
     mut events: EventWriter<TankCommandEvent>,
 ) {
-    for (tank_entity, mut tank) in tanks.iter_mut() {
-        if tank.since_fire.elapsed_secs() < AI_RELOAD_TIME + tank.fire_jitter {
+    for (tank_entity, mut ai_tank, tank) in tanks.iter_mut() {
+        if ai_tank.since_fire.elapsed_secs() < AI_RELOAD_TIME + ai_tank.fire_jitter {
             continue;
         }
-        if tank.target.is_none() {
+        if ai_tank.target.is_none() {
+            continue;
+        }
+        if ai_tank.since_aim.elapsed_secs() < AI_AIM_INTERVAL * 0.3 {
+            continue;
+        }
+        if !tank.has_sol {
             continue;
         }
         let event_type = super::events::TankCommandEventType::Fire;
@@ -77,8 +83,8 @@ fn tank_auto_fire(
             tank_entity,
             event_type,
         });
-        tank.since_fire.reset();
-        tank.fire_jitter = (random::<f32>() * 2.0 - 1.0) * AI_FIRE_JITTER;
+        ai_tank.since_fire.reset();
+        ai_tank.fire_jitter = (random::<f32>() * 2.0 - 1.0) * AI_FIRE_JITTER;
     }
 }
 
@@ -105,7 +111,7 @@ fn tank_auto_aim(
                     if solution.err_sol.is_none() {
                         // aim at it again
 
-                        let travel_time = solution.low_sol.expect("wtf?").flight_time;
+                        let travel_time = solution.chosen_sol.expect("wtf?").flight_time;
 
                         let target_position = potential_targets
                             .get(target_ent)

@@ -31,7 +31,7 @@ use bevy::input::mouse::MouseWheel;
 pub struct FlyingCameraPlugin;
 impl Plugin for FlyingCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(TemporalAntiAliasPlugin)
+        app //.add_plugins(TemporalAntiAliasPlugin)  # 0.12 https://github.com/bevyengine/bevy/issues/9721
             .init_resource::<FlyingCameraInputState>()
             .register_type::<FlyingCameraInputState>()
             .init_resource::<FlyingCameraMovementSettings>()
@@ -170,7 +170,7 @@ fn setup_flying_camera(mut commands: Commands) {
             SpatialAudioListener,
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
-        .insert(TemporalAntiAliasBundle::default())
+        // .insert(TemporalAntiAliasBundle::default())  # 0.12  https://github.com/bevyengine/bevy/issues/9721
         .id();
 
     let player = commands
